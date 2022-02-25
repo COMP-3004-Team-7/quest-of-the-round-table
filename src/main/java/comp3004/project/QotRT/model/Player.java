@@ -4,16 +4,17 @@ import java.security.Principal;
 import java.util.ArrayList;
 
 public class Player implements Principal {
-    private String name;
+    private String username;
+    private String principalName; //Used for keeping track of Principal Session
     private Integer playerNumber;
 
     public Player(String name) {
-        this.name = name;
+        this.principalName = name;
         playerNumber = 0;
     }
 
     public Player(String name, Integer playerNumber) {
-        this.name = name;
+        this.principalName = name;
         this.playerNumber = playerNumber;
     }
 
@@ -27,10 +28,18 @@ public class Player implements Principal {
 
     @Override
     public String getName() {
-        return name;
+        return principalName;
     }
 
     public void setName(String name) {
-        this.name = name;
+        this.principalName = name;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }
