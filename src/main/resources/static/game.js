@@ -12,7 +12,6 @@ $('document').ready(function(){
     //Set Event Listeners
     document.getElementById("create-game-button").addEventListener("click", createGame);
     document.getElementById("join-game-button").addEventListener("click", connectToSpecificGame);
-    document.getElementById("start-game-button").addEventListener("click", startGame);
 });
 
 //connect to socket function (when user creates game or joins game)
@@ -26,10 +25,6 @@ function connectToSocket(gameId){
             let data = JSON.parse(response.body)
             console.log(data);
             updatePlayerNames(data);
-        });
-        stompClient.subscribe("/user/topic/game-progress/" + gameId, function (response){
-            //let data = JSON.parse(response.body)
-            //console.log(data);
         });
     });
 }
@@ -47,7 +42,7 @@ function createGame(){
             dataType: "json",
             contentType: "application/json",
             data: JSON.stringify({
-                "username": playerName
+                "name": playerName
             }),
             success: function(data){
                 gameId = data.gameId;
@@ -58,9 +53,6 @@ function createGame(){
                 document.getElementById("available-games").style.display = "none";
                 setTimeout(function() {
                     stompClient.send("/topic/game-progress/" + gameId, {}, JSON.stringify(data));
-                    console.log("SENDING PRINCIPAL UPDATE INFO!!!")
-                    stompClient.send("/app/update-principal/" + gameId, {},
-                    JSON.stringify({ "player": {"username": playerName}, "gameId": gameId }));
                 }, 500);
             },
             error: function(error){
@@ -77,7 +69,7 @@ function connectToSpecificGame(){
             alert("please enter name")
         }
         else{
-            gameId = document.getElementById("join-game").value;
+            let gameId = document.getElementById("join-game").value;
             if(gameId == null || gameId === ""){
                         alert("please enter game ID")
             }
@@ -88,7 +80,7 @@ function connectToSpecificGame(){
                 contentType: "application/json",
                 data: JSON.stringify({
                     "player": {
-                        "username": playerName
+                        "name": playerName
                     },
                     "gameId": gameId
                 }),
@@ -103,9 +95,6 @@ function connectToSpecificGame(){
                     document.getElementById("available-games").style.display = "none";
                     setTimeout(function() {
                         stompClient.send("/topic/game-progress/" + gameId, {}, JSON.stringify(data));
-                        console.log("SENDING PRINCIPAL UPDATE INFO!!!")
-                        stompClient.send("/app/update-principal/" + gameId, {},
-                        JSON.stringify({ "player": {"username": playerName}, "gameId": gameId }));
                     }, 500);
                 },
                 error: function(error){
@@ -113,11 +102,6 @@ function connectToSpecificGame(){
                 }
             });
         }
-}
-
-//Start Game
-function startGame(){
-    stompClient.send("/app/play-game/" + gameId, {}, JSON.stringify({ "player": {"name": playerName},"gameId": gameId}));
 }
 
 //Update player names
@@ -128,8 +112,9 @@ function updatePlayerNames(game){
     //Build string of player names
     let playerList = "<h4>Player Names</h4>"
     for(let i = 0; i < players.length; i++){
-        console.log(players[i].username);
-        playerList = playerList + "<p>" + players[i].username + "</p>";
+        console.log(players[i].name);
+        playerList = playerList + "<p>" + players[i].name + "</p>";
     }
+    console.log(playerList);
     document.getElementById("current-player-names").innerHTML = playerList;
 }
