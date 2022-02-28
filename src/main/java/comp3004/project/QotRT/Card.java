@@ -7,8 +7,11 @@ import java.util.Random;
 
 public class Card {
     String name;
+    int battlepoints;
+    int bids;
+    String specialevent;
     ArrayList<String> cards = new ArrayList<String>();
-    ArrayList<Card> realcards = new ArrayList<Card>();
+    ///ArrayList<Card> realcards = new ArrayList<Card>();
     ArrayList<Player> players = new ArrayList<Player>();
     String arr[] = {"Horse+10","Sword+10","Dagger+5","Excalibar+30","Lance+20",
                     "Battle-ax+15","Test of the Questing Beast","Test of temptation",
@@ -19,7 +22,22 @@ public class Card {
                     "King Arthur+10","Queen Guinevere","Merlin","Queen Iseult","Sir Lancelot+15","Sir Galahad+15"};
     public String getName() {
         return name;
+
     }
+
+    public int getBattlepoints() {
+        return battlepoints;
+    }
+
+    public int getBids() {
+        return bids;
+    }
+
+    public String getSpecialevent() {
+        return specialevent;
+    }
+
+
 
     public Card() {
         for (int i = 0; i < 32; i++){
@@ -40,9 +58,12 @@ public class Card {
     public String toString() {
         StringBuffer display = new StringBuffer();
         display.append("---- " + name + " ----\n");
+        /*
         for (Card card : realcards) {
             display.append(card + "\n");
         }
+
+         */
         return display.toString();
     }
 }

@@ -10,8 +10,8 @@ public class WeaponCardFactory extends AdventureCardFactory{
             return new Lance();
         } else if (item.equals("Dagger")) {
             return new Dagger();
-        } else if(item.equals("Excalibar")) {
-            return new Excalibar();
+        } else if(item.equals("Excalibur")) {
+            return new Excalibur();
         }else if(item.equals("BattleAx")){
             return new BattleAx();
         } else {
