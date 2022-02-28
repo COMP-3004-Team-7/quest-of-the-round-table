@@ -38,7 +38,7 @@ public class Card {
     }
 
 
-
+/*
     public Card() {
         for (int i = 0; i < 32; i++){
             cards.add(arr[i]);
@@ -55,6 +55,8 @@ public class Card {
         }
 
     }
+
+ */
     public String toString() {
         StringBuffer display = new StringBuffer();
         display.append("---- " + name + " ----\n");
