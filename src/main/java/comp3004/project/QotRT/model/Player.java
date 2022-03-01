@@ -13,6 +13,7 @@ public class Player implements Principal {
 
     public Player(String name) {
         this.principalName = name;
+        cards = new ArrayList<>();
         playerNumber = 0;
     }
 
@@ -47,4 +48,8 @@ public class Player implements Principal {
     }
 
     public ArrayList<Card> getCards() { return cards; }
+
+    public void setCards(ArrayList<Card> cards) {
+        this.cards = cards;
+    }
 }

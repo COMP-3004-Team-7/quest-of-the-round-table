@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Objects;
 
 @RestController
@@ -36,6 +37,8 @@ public class GameController {
     public ResponseEntity<Game> start(@RequestBody Player player){
         System.out.println("start game request");
         System.out.println("start game request-playername: " + player.getUsername());
+        //Set Cards
+        player.setCards(new ArrayList<>());
         return ResponseEntity.ok(gameService.createGame(player));
     }
 
@@ -44,6 +47,8 @@ public class GameController {
     @SendTo("/game-progress/{gameId}")
     public ResponseEntity<Game> connect(@RequestBody ConnectRequest request) throws Exception {
         System.out.println("connect game request");
+        //Set Cards
+        request.getPlayer().setCards(new ArrayList<>());
         return ResponseEntity.ok(gameService.connectToGame(request.getPlayer(), request.getGameId()));
     }
 
@@ -82,10 +87,12 @@ public class GameController {
 //        System.out.println("PLAYER: " + principal.getName());
 //        System.out.println("GAMEID: " + gameId);
 //        Game game = gameService.getGame(gameId);
-//        //Remove discarded cards from players hand
+//        //Remove discarded cards from players hand and move to adventure deck discard pile
 //        for(int i = 0; i < request.getCards().size(); i++){
 //            request.getPlayer().getCards().remove(request.getCards().get(i));
+//            game.getAdventureDeck().discardCard(request.getCards().get(i));
 //        }
+//
 //        //Send to DiscardedCards to everyones discard pile + the player that discarded them
 //        simpMessagingTemplate.convertAndSendToUser(request.getPlayer().getName(),
 //                "/topic/discard-pile/"+gameId, objectPayload);

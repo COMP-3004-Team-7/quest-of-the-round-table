@@ -114,4 +114,20 @@ public class AdventureDeck {
     public void discardCard(Card c){
         discardPile.add(c);
     }
+
+    public ArrayList<Card> getDeck() {
+        return deck;
+    }
+
+    public void setDeck(ArrayList<Card> deck) {
+        this.deck = deck;
+    }
+
+    public ArrayList<Card> getDiscardPile() {
+        return discardPile;
+    }
+
+    public void setDiscardPile(ArrayList<Card> discardPile) {
+        this.discardPile = discardPile;
+    }
 }
