@@ -7,6 +7,7 @@ public class Player implements Principal {
     private String username;
     private String principalName; //Used for keeping track of Principal Session
     private Integer playerNumber;
+    //private ArrayList<Cards> cards;
 
     public Player(String name) {
         this.principalName = name;
@@ -42,4 +43,6 @@ public class Player implements Principal {
     public void setUsername(String username) {
         this.username = username;
     }
+
+    //public ArrayList<Cards> getCards() { return cards; }
 }

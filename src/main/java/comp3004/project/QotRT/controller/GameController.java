@@ -66,7 +66,25 @@ public class GameController {
         }
     }
 
-    //User Pressed 'Start Game' Button
+//DISCARD CARDS
+//    //User Pressed 'Discard Card' Button to discard 1 or more cards
+//    //Body should be a different 'dto' instead of a Connect Request maybe a DiscardCardRequest
+//    @MessageMapping("/discard-cards/{gameId}")
+//    public void discardCards(@DestinationVariable String gameId, @RequestBody ConnectRequest request, Principal principal) throws Exception {
+//        System.out.println("discard-cards request");
+//        System.out.println("PLAYER: " + principal.getName());
+//        System.out.println("GAMEID: " + gameId);
+//        Game game = gameService.getGame(gameId);
+//        //Remove discarded cards from players hand
+//        for(int i = 0; i < request.getCards().size(); i++){
+//            request.getPlayer().getCards().remove(request.getCards().get(i));
+//        }
+//        //Send to DiscardedCards to everyones discard pile + the player that discarded them
+//        simpMessagingTemplate.convertAndSendToUser(request.getPlayer().getName(),
+//                "/topic/discard-pile/"+gameId, objectPayload);
+//    }
+
+    //User Pressed 'Draw Card' Button
     @MessageMapping("/draw-card/{gameId}")
     public void drawCard(@DestinationVariable String gameId, @RequestBody ConnectRequest request, Principal principal) throws Exception {
         System.out.println("play-game request");
