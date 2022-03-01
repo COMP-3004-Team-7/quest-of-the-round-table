@@ -1,5 +1,7 @@
 package comp3004.project.QotRT.model;
 
+import comp3004.project.QotRT.cards.Card;
+
 import java.security.Principal;
 import java.util.ArrayList;
 
@@ -7,7 +9,7 @@ public class Player implements Principal {
     private String username;
     private String principalName; //Used for keeping track of Principal Session
     private Integer playerNumber;
-    //private ArrayList<Cards> cards;
+    private ArrayList<Card> cards;
 
     public Player(String name) {
         this.principalName = name;
@@ -44,5 +46,5 @@ public class Player implements Principal {
         this.username = username;
     }
 
-    //public ArrayList<Cards> getCards() { return cards; }
+    public ArrayList<Card> getCards() { return cards; }
 }

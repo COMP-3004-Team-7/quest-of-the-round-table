@@ -1,5 +1,7 @@
 package comp3004.project.QotRT.model;
 
+import comp3004.project.QotRT.cards.Card;
+
 import java.util.ArrayList;
 
 public class Game {
@@ -7,8 +9,10 @@ public class Game {
     private ArrayList<Player> players;
     private String gameId;
     private GameStatus status;
+    private AdventureDeck adventureDeck;
 
     public Game() {
+        adventureDeck = new AdventureDeck();
         players = new ArrayList<>();
     }
 
@@ -39,5 +43,9 @@ public class Game {
 
     public void setStatus(GameStatus status) {
         this.status = status;
+    }
+
+    public AdventureDeck getAdventureDeck() {
+        return adventureDeck;
     }
 }

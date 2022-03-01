@@ -1,7 +1,7 @@
 package comp3004.project.QotRT.cards;
 
 public class FoeCardFactory extends AdventureCardFactory{
-    Card createCard(String item){
+    public Card createCard(String item){
         if (item.equals("Green Knight")) {
             return new GreenKnight();
         }

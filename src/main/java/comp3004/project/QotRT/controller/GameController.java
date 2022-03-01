@@ -57,12 +57,19 @@ public class GameController {
         for(int i = 0; i < game.getPlayers().size(); i++){
             System.out.println(game.getPlayers().get(i).getName());
         }
-        //Deal 12 Random Cards to Each Player
-        //....
-        //Send to Cards to Each User (Right now it just sends principal name back to them)
+        //Get adventure deck -> buildDeck -> shuffle Deck
+        game.getAdventureDeck().buildStartingDeck().shuffleDeck();
+        //Deal 12 Cards to Each Player
+        for(int i = 0; i < game.getPlayers().size(); i++){
+            Player p = game.getPlayers().get(i);
+            for(int j = 0; j < 12; j++){
+                p.getCards().add(game.getAdventureDeck().drawCard());
+            }
+        }
+        //Send to Cards to Each User
         for(int i = 0; i < game.getPlayers().size(); i++){
             simpMessagingTemplate.convertAndSendToUser(
-                    game.getPlayers().get(i).getName(),"/topic/game-progress/"+gameId, game.getPlayers().get(i).getName());
+                    game.getPlayers().get(i).getName(),"/topic/game-progress/"+gameId, game.getPlayers().get(i).getCards());
         }
     }
 

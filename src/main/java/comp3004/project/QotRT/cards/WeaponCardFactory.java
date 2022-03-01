@@ -1,7 +1,7 @@
 package comp3004.project.QotRT.cards;
 
 public class WeaponCardFactory extends AdventureCardFactory {
-    Card createCard(String item){
+    public Card createCard(String item){
         if (item.equals("Horse")) {
             return new Horse();
         } else if (item.equals("Sword")) {
