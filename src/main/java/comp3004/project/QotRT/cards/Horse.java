@@ -1,4 +1,4 @@
-package comp3004.project.QotRT;
+package comp3004.project.QotRT.cards;
 
 public class Horse extends Card{
     public Horse() {

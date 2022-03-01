@@ -1,6 +1,6 @@
-package comp3004.project.QotRT;
+package comp3004.project.QotRT.cards;
 
-public class TestCardFactory extends AdventureCardFactory{
+public class TestCardFactory extends AdventureCardFactory {
     Card createCard(String item){
         if (item.equals("Test of Morghan Le Fey")) {
             return new TestofMorghanLeFey();

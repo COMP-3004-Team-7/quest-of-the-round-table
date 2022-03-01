@@ -1,6 +1,8 @@
-package comp3004.project.QotRT;
+package comp3004.project.QotRT.cards;
 
-public class Thieves extends Card{
+import comp3004.project.QotRT.cards.Card;
+
+public class Thieves extends Card {
 
     public Thieves(){
         this.name = "Thieves";

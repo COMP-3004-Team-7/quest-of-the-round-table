@@ -1,6 +1,8 @@
-package comp3004.project.QotRT;
+package comp3004.project.QotRT.cards;
 
-public class TestQuestingBeast extends Card{
+import comp3004.project.QotRT.cards.Card;
+
+public class TestQuestingBeast extends Card {
     public TestQuestingBeast() {
         name = "Test of Questing Beast";
         //realcards.add(this);

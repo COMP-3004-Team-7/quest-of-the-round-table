@@ -1,6 +1,8 @@
-package comp3004.project.QotRT;
+package comp3004.project.QotRT.cards;
 
-public class Saxons extends Card{
+import comp3004.project.QotRT.cards.Card;
+
+public class Saxons extends Card {
 
     public Saxons(){
         this.name = "Saxons";

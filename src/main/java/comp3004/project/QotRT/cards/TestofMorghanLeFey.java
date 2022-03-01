@@ -1,6 +1,8 @@
-package comp3004.project.QotRT;
+package comp3004.project.QotRT.cards;
 
-public class TestofMorghanLeFey extends Card{
+import comp3004.project.QotRT.cards.Card;
+
+public class TestofMorghanLeFey extends Card {
     public TestofMorghanLeFey() {
         name = "Test of Morghan Le Fey";
         //realcards.add(this);

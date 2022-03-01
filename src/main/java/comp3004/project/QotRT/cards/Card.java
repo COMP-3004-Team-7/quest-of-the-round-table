@@ -1,4 +1,4 @@
-package comp3004.project.QotRT;
+package comp3004.project.QotRT.cards;
 
 import comp3004.project.QotRT.model.Player;
 

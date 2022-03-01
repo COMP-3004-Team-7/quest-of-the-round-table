@@ -1,4 +1,6 @@
-package comp3004.project.QotRT;
+package comp3004.project.QotRT.cards;
+
+import comp3004.project.QotRT.cards.Card;
 
 public class TestofValor extends Card {
     public TestofValor() {

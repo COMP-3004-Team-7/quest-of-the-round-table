@@ -1,6 +1,8 @@
-package comp3004.project.QotRT;
+package comp3004.project.QotRT.cards;
 
-public class Sword extends Card{
+import comp3004.project.QotRT.cards.Card;
+
+public class Sword extends Card {
     public Sword() {
         name = "Sword";
         //realcards.add(this);
