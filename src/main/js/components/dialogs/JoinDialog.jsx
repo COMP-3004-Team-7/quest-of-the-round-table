@@ -7,6 +7,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import TrapFocus from '@mui/base/Unstable_TrapFocus';
 
 class JoinDialog extends React.Component {
     constructor(props) {
@@ -28,7 +29,7 @@ class JoinDialog extends React.Component {
     }
 
     onChangeGameID = (e) => {
-        this.setState({...this.state, GameID: e.target.value});
+        this.setState({...this.state, gameID: e.target.value});
     }
 
     //API consumer
@@ -37,8 +38,9 @@ class JoinDialog extends React.Component {
             console.log("connected to the frame: " + frame);
             this.props.stompService.subscribe("/topic/game-progress/" + gameId, (response) => {
                 let data = JSON.parse(response.body)
-                console.log(data);
-                this.updatePlayerNames(data);
+                console.log("Should fire event");
+                console.log(this.props.setGame);
+                this.props.setGame(data);
             });
             this.props.stompService.subscribe("/user/topic/game-progress/" + gameId, (response) => {
                 //Do Something With the Data -- Right now this is getting back the 12 initial cards that
@@ -69,11 +71,9 @@ class JoinDialog extends React.Component {
                 //Receiving a 'Game' Object on Success
                 success: (data) => {
                     this.setState({...this.state, gameID: data.gameId});
-                    let numPlayers = data.players.length
-                    console.log("NUM PLAYERS = " + numPlayers)
-                    console.log("GAMEID = " + this.state.gameID)
-                    //playerType = numPlayers;
+
                     this.connectToSocket(this.state.gameID);
+                    this.props.setGame(data);
                     alert("You have joined a game. Game Id is: " + data.gameId)
 
                     setTimeout(() => {
@@ -81,12 +81,12 @@ class JoinDialog extends React.Component {
                         this.props.stompService.send("/app/update-principal/" + this.state.gameID, {},
                             JSON.stringify({"player": {"username": this.state.name},"gameId": this.state.gameID}));
                     }, 500);
+                    this.handleClose();
                 },
                 error: function(error){
                     console.log(error);
                 }
             });
-            this.handleClose();
         }
     }
 
@@ -108,6 +108,7 @@ class JoinDialog extends React.Component {
                     this.setState({...this.state, gameID: data.gameId});
                     //playerType = 1;
                     this.connectToSocket(this.state.gameID);
+                    this.props.setGame(data);
                     alert("You have created a game. Game Id is: " + this.state.gameID);
 
                     setTimeout(() => {
@@ -115,66 +116,56 @@ class JoinDialog extends React.Component {
                         this.props.stompService.send("/app/update-principal/" + this.state.gameID, {},
                             JSON.stringify({"player": {"username": this.state.name},"gameId": this.state.gameID}));
                     }, 500);
+                    this.handleClose();
                 },
                 error: function(error){
                     console.log(error);
                 }
             });
-            this.handleClose();
         }
     }
 
 
     startGame(){
-        console.log("STARTING GAME... GAMEID = " + this.state.gameID);
         this.props.stompService.send("/app/play-game/" + this.state.gameID, {}, JSON.stringify({"player": {"username": this.state.name}, gameId: this.state.gameID}));
     }
 
-
-
-    //Update player names
-    updatePlayerNames = (game) => {
-        let players = game.players;
-        console.log("PLAYERS = " + players);
-        console.log("Player length = " + players.length);
-        console.log("Game Id = " + game.gameId);
-    }
-
     render() {
-        return (<div>
-            <Dialog open={this.state.open} onClose={this.handleClose}>
-                <DialogTitle>Game Setup</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Join a game by ID or create a new game
-                    </DialogContentText>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        id="gameIDText"
-                        label="Game ID"
-                        type="text"
-                        fullWidth
-                        variant="standard"
-                        onChange={this.onChangeGameID}
-                    />
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        id="playerNameText"
-                        label="Player Name"
-                        type="text"
-                        fullWidth
-                        variant="standard"
-                        onChange={this.onChangeName}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={this.createGame}>Create Game</Button>
-                    <Button onClick={this.connectToSpecificGame}>Join Game</Button>
-                </DialogActions>
-            </Dialog>
-        </div>);
+        return (
+            <TrapFocus open={this.state.open}>
+                <Dialog open={this.state.open}>
+                    <DialogTitle>Game Setup</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>
+                            Join a game by ID or create a new game
+                        </DialogContentText>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            id="gameIDText"
+                            label="Game ID"
+                            type="text"
+                            fullWidth
+                            variant="standard"
+                            onChange={this.onChangeGameID}
+                        />
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            id="playerNameText"
+                            label="Player Name"
+                            type="text"
+                            fullWidth
+                            variant="standard"
+                            onChange={this.onChangeName}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={this.createGame}>Create Game</Button>
+                        <Button onClick={this.connectToSpecificGame}>Join Game</Button>
+                    </DialogActions>
+                </Dialog>
+            </TrapFocus>);
     }
 }
 
