@@ -64,7 +64,6 @@ public class Deck {
                 cardList.add(new Thieves());
             }
         }
-
         return cardList;
     }
 }

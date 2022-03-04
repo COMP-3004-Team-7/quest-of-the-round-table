@@ -34,10 +34,33 @@ function connectToSocket(gameId){
             document.getElementById("draw-card-button").style.display = "block";
             document.getElementById("start-game-button").style.display = "none";
             document.getElementById("draw-card-button").addEventListener("click", drawCard);
+            document.getElementById("discard-button").addEventListener("click", discardCard);
+
+            let data = JSON.parse(response.body)
+            console.log(data);
+            console.log(data.length)
+            if (data.length > 12){
+                alert("Please discard down to 12 cards")
+                document.getElementById("draw-card-button").style.display = "none";
+            }
+            showCards(data)
+
+        });
+        stompClient.subscribe("/topic/discard-pile/" + gameId, function (response){
+            let data = JSON.parse(response.body)
+            console.log(data);
+            alert("A card has been removed!")
         });
     });
 }
+function showCards(data){
+    let cardList = "<h4>Cards</h4>"
 
+    for(let i = 0; i < data.length; i++){
+        cardList = cardList + "<p>" + data[i].name + "</p>";
+    }
+    document.getElementById("main-player").innerHTML = cardList;
+}
 //Create new game
 function createGame(){
     playerName = document.getElementById("create-name").value;
@@ -129,6 +152,10 @@ function startGame(){
 
 function drawCard(){
     stompClient.send("/app/draw-card/" + gameId, {}, JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
+}
+
+function discardCard(){
+    stompClient.send("/app/discard-cards/" + gameId, {}, JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
 }
 
 //Update player names

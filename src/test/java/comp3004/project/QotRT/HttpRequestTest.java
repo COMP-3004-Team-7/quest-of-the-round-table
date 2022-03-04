@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import comp3004.project.QotRT.cards.Card;
 import comp3004.project.QotRT.controller.GameController;
 import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
@@ -21,6 +22,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -47,7 +49,7 @@ class TestingWebApplicationTest {
 
 	@Autowired
 	private MockMvc mockMvc;
-
+	private SimpMessagingTemplate simpMessagingTemplate;
 	//Test player creating game and test the name is correct
 	@Test
 	void playerCreatingNewGame() throws Exception {
@@ -72,5 +74,37 @@ class TestingWebApplicationTest {
 		System.out.println(actualJson);
 		Assertions.assertEquals(name, "John");
 	}
+
+	//@Test
+
+//	void discardingCardTest() throws Exception{
+//		simpMessagingTemplate = new SimpMessagingTemplate();
+//	}
+		//ObjectMapper mapper = new ObjectMapper();
+
+//		//Creating player
+//		Player p = new Player("John",0);
+//		//Converting the Player to JSONString
+//		String jsonPlayer = mapper.writeValueAsString(p);
+//
+//		MvcResult result = mockMvc.perform(post("/game/start")
+//						.content(jsonPlayer)
+//						.contentType(MediaType.APPLICATION_JSON)
+//						.accept(MediaType.APPLICATION_JSON))
+//				.andExpect(status().isOk()).andReturn();
+//
+//		String actualJson = result.getResponse().getContentAsString();
+//		JSONObject obj = new JSONObject(actualJson);
+//		String id = obj.getString("gameId");
+//		System.out.println(id);
+//
+//		MvcResult result1 = mockMvc.perform(post("/app/play-game/"+id)
+//						.content(jsonPlayer)
+//						.contentType(MediaType.APPLICATION_JSON)
+//						.accept(MediaType.APPLICATION_JSON))
+//				.andExpect(status().isOk()).andReturn();
+//	}
+
+
 
 }
