@@ -12,10 +12,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.ArrayList;
@@ -54,11 +51,11 @@ public class GameController {
     }
 
     //User Pressed 'Start Game' Button
-    @MessageMapping("/play-game/{gameId}")
-    public void playGame(@DestinationVariable String gameId, @RequestBody ConnectRequest request, Principal principal) throws Exception {
+    @PostMapping("/play-game")
+    //@MessageMapping("/play-game/{gameId}")
+    public String playGame(@RequestParam String gameId, @RequestBody ConnectRequest request) throws Exception {
         System.out.println("play-game request");
-        System.out.println("PLAYER: " + principal.getName());
-        System.out.println("GAMEID: " + gameId);
+        System.out.println("GAMEID = " + gameId);
         Game game = gameService.getGame(gameId);
         for(int i = 0; i < game.getPlayers().size(); i++){
             System.out.println(game.getPlayers().get(i).getName());
@@ -72,11 +69,12 @@ public class GameController {
                 p.getCards().add(game.getAdventureDeck().drawCard());
             }
         }
-        //Send to Cards to Each User
+        //Send Cards to Each User
         for(int i = 0; i < game.getPlayers().size(); i++){
             simpMessagingTemplate.convertAndSendToUser(
-                    game.getPlayers().get(i).getName(),"/topic/game-progress/"+gameId, game.getPlayers().get(i).getCards());
+                    game.getPlayers().get(i).getName(),"/topic/cards-in-hand/"+gameId, game.getPlayers().get(i).getCards());
         }
+        return "Dummy Data";
     }
 
 //DISCARD CARDS
@@ -112,34 +110,39 @@ public class GameController {
 //    }
 
     //PART 1 - BASIC REMOVAL
-    @MessageMapping("/discard-cards/{gameId}")
-    @SendTo("/topic/discard-pile/{gameId}")
-    public Card discardCards(@DestinationVariable String gameId, Principal principal) throws Exception {
+    @PostMapping("/discard-cards")
+    //@MessageMapping("/discard-cards/{gameId}")
+    //@SendTo("/topic/discard-pile/{gameId}")
+    public ArrayList<Card> discardCards(@DestinationVariable String gameId, @RequestBody ConnectRequest request) throws Exception {
         System.out.println("discard-cards request");
-        System.out.println("PLAYER: " + principal.getName());
-        System.out.println("GAMEID: " + gameId);
         Game game = gameService.getGame(gameId);
         Card discardedCard = null;
         //Remove discarded cards from players hand and move to adventure deck discard pile
         for (int i = 0; i < game.getPlayers().size(); i++) {
-            if (game.getPlayers().get(i).getName().equals(principal.getName())) {
+            if (game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())) {
                 discardedCard = game.getPlayers().get(i).getCards().remove(0);
-                //Send card back to player
-                simpMessagingTemplate.convertAndSendToUser(principal.getName(),
-                        "/topic/game-progress/" + gameId, game.getPlayers().get(i).getCards());
-                break;
+                //Send discarded card back to everyone
+                simpMessagingTemplate.convertAndSend(
+                        "/topic/discard-pile/" + gameId, discardedCard);
+                //Send cards-in-hand back to player
+                return game.getPlayers().get(i).getCards();
             }
         }
-        return discardedCard;
+        return null;
     }
+
     //User Pressed 'Draw Card' Button
-    @MessageMapping("/draw-card/{gameId}")
-    public void drawCard(@DestinationVariable String gameId, @RequestBody ConnectRequest request, Principal principal) throws Exception {
+    @PostMapping("/draw-card")
+    //@MessageMapping("/draw-card/{gameId}")
+    public ArrayList<Card> drawCard(@RequestParam String gameId, @RequestBody ConnectRequest request) throws Exception {
         System.out.println("draw-card request");
-        System.out.println("PLAYER: " + principal.getName());
-        System.out.println("GAMEID: " + gameId);
         Game game = gameService.getGame(gameId);
+        //Finding Principal Name of Player making draw-card request
+        String principalName = null;
         for(int i = 0; i < game.getPlayers().size(); i++){
+            if(game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
+                principalName = game.getPlayers().get(i).getName();
+            }
             System.out.println(game.getPlayers().get(i).getName());
         }
         //Deal Random Card to Player
@@ -147,23 +150,21 @@ public class GameController {
         //THEY CAN EITHER DROP THE CARD OR KEEP THE CARD AND DROP ANOTHER CARD
 
         for (int i = 0 ; i < game.getPlayers().size(); i++){
-            if (game.getPlayers().get(i).getName().equals(principal.getName())){
+            if (game.getPlayers().get(i).getName().equals(principalName)){
                 Card card  = game.getAdventureDeck().drawCard();
                 game.getPlayers().get(i).getCards().add(card);
-                //Send card back to player
-                simpMessagingTemplate.convertAndSendToUser(principal.getName(),
-                        "/topic/game-progress/" + gameId, game.getPlayers().get(i).getCards());
-                break;
+                //Send cards back to player
+                return game.getPlayers().get(i).getCards();
             }
         }
-
+        return null;
     }
 
     //This is used to just update the principal names connect players
     @MessageMapping("/update-principal/{gameId}")
+    //@SendToUser("/topic/updated-principal-name/{gameId}")
     public void updatePrincipal(@DestinationVariable String gameId, @RequestBody ConnectRequest request, Principal principal) throws Exception {
         System.out.println("update principal request");
-        System.out.println("GAMEID: " + gameId);
         Game game = gameService.getGame(gameId);
         for(int i = 0; i < game.getPlayers().size(); i++){
             if(game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){

@@ -4,7 +4,6 @@ let gameId;
 let playerType;
 let playerName;
 
-
 $('document').ready(function(){
     //Hide game-board div until players connect
     document.getElementById("game-board").style.display = "none";
@@ -28,22 +27,13 @@ function connectToSocket(gameId){
             console.log(data);
             updatePlayerNames(data);
         });
+        stompClient.subscribe("/user/topic/cards-in-hand/" + gameId, function (response){
+            let data = JSON.parse(response.body)
+            updateCardsInHand(data);
+        });
         stompClient.subscribe("/user/topic/game-progress/" + gameId, function (response){
             //Do Something With the Data -- Right now this is getting back the 12 initial cards that
             //are dealt to the Client/Player
-            document.getElementById("draw-card-button").style.display = "block";
-            document.getElementById("start-game-button").style.display = "none";
-            document.getElementById("draw-card-button").addEventListener("click", drawCard);
-            document.getElementById("discard-button").addEventListener("click", discardCard);
-
-            let data = JSON.parse(response.body)
-            console.log(data);
-            console.log(data.length)
-            if (data.length > 12){
-                alert("Please discard down to 12 cards")
-                document.getElementById("draw-card-button").style.display = "none";
-            }
-            showCards(data)
 
         });
         stompClient.subscribe("/topic/discard-pile/" + gameId, function (response){
@@ -53,6 +43,17 @@ function connectToSocket(gameId){
         });
     });
 }
+
+function updateCardsInHand(data){
+    console.log(data);
+    console.log(data.length)
+    if (data.length > 12){
+        alert("Please discard down to 12 cards")
+        document.getElementById("draw-card-button").style.display = "none";
+    }
+    showCards(data)
+}
+
 function showCards(data){
     let cardList = "<h4>Cards</h4>"
 
@@ -89,7 +90,7 @@ function createGame(){
                     stompClient.send("/topic/game-progress/" + gameId, {}, JSON.stringify(data));
                     stompClient.send("/app/update-principal/" + gameId, {},
                     JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
-                }, 500);
+                }, 200);
             },
             error: function(error){
                 console.log(error);
@@ -146,16 +147,65 @@ function connectToSpecificGame(){
 }
 
 function startGame(){
-    console.log("STARTING GAME... GAMEID = " + gameId);
-    stompClient.send("/app/play-game/" + gameId, {}, JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
+    $.ajax({
+        url: "/game/play-game?gameId=" + gameId,
+        type: 'POST',
+        contentType: "application/json",
+        data: JSON.stringify({
+        "player": {"username": playerName},
+        "gameId": gameId}),
+        //Receiving nothing back -> update DOM elements to start game
+        success: function(string){
+            document.getElementById("draw-card-button").style.display = "block";
+            document.getElementById("start-game-button").style.display = "none";
+            document.getElementById("draw-card-button").addEventListener("click", drawCard);
+            document.getElementById("discard-button").addEventListener("click", discardCard);
+        },
+        error: function(error){
+            console.log(error);
+        }
+    })
+    //stompClient.send("/app/play-game/" + gameId, {}, JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
 }
 
 function drawCard(){
-    stompClient.send("/app/draw-card/" + gameId, {}, JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
+    $.ajax({
+        url: "/game/draw-card?gameId=" + gameId,
+        type: 'POST',
+        contentType: "application/json",
+        data: JSON.stringify({
+        "player": {"username": playerName},
+        "gameId": gameId}),
+        //Receiving nothing back -> update DOM elements to start game
+        success: function(data){
+            console.log(data);
+            updateCardsInHand(data);
+        },
+        error: function(error){
+            console.log(error);
+        }
+    })
+    //stompClient.send("/app/draw-card/" + gameId, {}, JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
 }
 
 function discardCard(){
-    stompClient.send("/app/discard-cards/" + gameId, {}, JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
+    $.ajax({
+        url: "/game/discard-cards?gameId=" + gameId,
+        type: 'POST',
+        contentType: "application/json",
+        data: JSON.stringify({
+        "player": {"username": playerName},
+        "gameId": gameId}),
+        //Receiving nothing back -> update DOM elements to start game
+        success: function(data){
+            console.log("Cards after discarding "+data);
+            updateCardsInHand(data);
+        },
+        error: function(error){
+            console.log(error);
+        }
+    })
+    //stompClient.send("/app/discard-cards/" + gameId, {}, JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
 }
 
 //Update player names
