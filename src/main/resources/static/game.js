@@ -1,4 +1,3 @@
-
 let stompClient;
 let gameId;
 let playerType;
@@ -13,6 +12,9 @@ $('document').ready(function(){
     document.getElementById("create-game-button").addEventListener("click", createGame);
     document.getElementById("join-game-button").addEventListener("click", connectToSpecificGame);
     document.getElementById("start-game-button").addEventListener("click", startGame);
+
+    document.getElementById("draw-card-button").addEventListener("click", drawCard);
+    document.getElementById("discard-button").addEventListener("click", discardCard);
 });
 
 //connect to socket function (when user creates game or joins game)
@@ -30,6 +32,11 @@ function connectToSocket(gameId){
         stompClient.subscribe("/user/topic/cards-in-hand/" + gameId, function (response){
             let data = JSON.parse(response.body)
             updateCardsInHand(data);
+
+        });
+        stompClient.subscribe("/topic/start-game/" + gameId, function (response){
+            document.getElementById("draw-card-button").style.display = "block"; //show
+            document.getElementById("start-game-button").style.display = "none"; //hide
         });
         stompClient.subscribe("/user/topic/game-progress/" + gameId, function (response){
             //Do Something With the Data -- Right now this is getting back the 12 initial cards that
@@ -50,6 +57,9 @@ function updateCardsInHand(data){
     if (data.length > 12){
         alert("Please discard down to 12 cards")
         document.getElementById("draw-card-button").style.display = "none";
+    }
+    else{
+        document.getElementById("draw-card-button").style.display = "block";
     }
     showCards(data)
 }
@@ -89,7 +99,7 @@ function createGame(){
                 setTimeout(function() {
                     stompClient.send("/topic/game-progress/" + gameId, {}, JSON.stringify(data));
                     stompClient.send("/app/update-principal/" + gameId, {},
-                    JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
+                        JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
                 }, 200);
             },
             error: function(error){
@@ -101,49 +111,49 @@ function createGame(){
 
 //Connect to existing game (max 4 players)
 function connectToSpecificGame(){
-        playerName = document.getElementById("create-name").value;
-        if(playerName == null || playerName === ""){
-            alert("please enter name")
+    playerName = document.getElementById("create-name").value;
+    if(playerName == null || playerName === ""){
+        alert("please enter name")
+    }
+    else{
+        gameId = document.getElementById("join-game").value;
+        if(gameId == null || gameId === ""){
+            alert("please enter game ID")
         }
-        else{
-            gameId = document.getElementById("join-game").value;
-            if(gameId == null || gameId === ""){
-                        alert("please enter game ID")
-            }
-            $.ajax({
-                url: "/game/connect",
-                type: 'POST',
-                dataType: "json",
-                contentType: "application/json",
-                data: JSON.stringify({
-                    "player": {
-                        "username": playerName
-                    },
-                    "gameId": gameId
-                }),
-                //Receiving a 'Game' Object on Success
-                success: function(data){
-                    gameId = data.gameId;
-                    let numPlayers = data.players.length
-                    console.log("NUM PLAYERS = " + numPlayers)
-                    console.log("GAMEID = " + gameId)
-                    playerType = numPlayers;
-                    connectToSocket(gameId);
-                    alert("You have joined a game. Game Id is: " + data.gameId)
-                    document.getElementById("game-board").style.display = "block";
-                    document.getElementById("available-games").style.display = "none";
-                    document.getElementById("draw-card-button").style.display = "none";
-                    setTimeout(function() {
-                        stompClient.send("/topic/game-progress/" + gameId, {}, JSON.stringify(data));
-                        stompClient.send("/app/update-principal/" + gameId, {},
-                        JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
-                    }, 500);
+        $.ajax({
+            url: "/game/connect",
+            type: 'POST',
+            dataType: "json",
+            contentType: "application/json",
+            data: JSON.stringify({
+                "player": {
+                    "username": playerName
                 },
-                error: function(error){
-                    console.log(error);
-                }
-            });
-        }
+                "gameId": gameId
+            }),
+            //Receiving a 'Game' Object on Success
+            success: function(data){
+                gameId = data.gameId;
+                let numPlayers = data.players.length
+                console.log("NUM PLAYERS = " + numPlayers)
+                console.log("GAMEID = " + gameId)
+                playerType = numPlayers;
+                connectToSocket(gameId);
+                alert("You have joined a game. Game Id is: " + data.gameId)
+                document.getElementById("game-board").style.display = "block";
+                document.getElementById("available-games").style.display = "none";
+                document.getElementById("draw-card-button").style.display = "none";
+                setTimeout(function() {
+                    stompClient.send("/topic/game-progress/" + gameId, {}, JSON.stringify(data));
+                    stompClient.send("/app/update-principal/" + gameId, {},
+                        JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
+                }, 500);
+            },
+            error: function(error){
+                console.log(error);
+            }
+        });
+    }
 }
 
 function startGame(){
@@ -152,14 +162,11 @@ function startGame(){
         type: 'POST',
         contentType: "application/json",
         data: JSON.stringify({
-        "player": {"username": playerName},
-        "gameId": gameId}),
+            "player": {"username": playerName},
+            "gameId": gameId}),
         //Receiving nothing back -> update DOM elements to start game
         success: function(string){
-            document.getElementById("draw-card-button").style.display = "block";
-            document.getElementById("start-game-button").style.display = "none";
-            document.getElementById("draw-card-button").addEventListener("click", drawCard);
-            document.getElementById("discard-button").addEventListener("click", discardCard);
+            stompClient.send("/topic/start-game/" + gameId, {}, JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
         },
         error: function(error){
             console.log(error);
@@ -174,8 +181,8 @@ function drawCard(){
         type: 'POST',
         contentType: "application/json",
         data: JSON.stringify({
-        "player": {"username": playerName},
-        "gameId": gameId}),
+            "player": {"username": playerName},
+            "gameId": gameId}),
         //Receiving nothing back -> update DOM elements to start game
         success: function(data){
             console.log(data);
@@ -194,8 +201,8 @@ function discardCard(){
         type: 'POST',
         contentType: "application/json",
         data: JSON.stringify({
-        "player": {"username": playerName},
-        "gameId": gameId}),
+            "player": {"username": playerName},
+            "gameId": gameId}),
         //Receiving nothing back -> update DOM elements to start game
         success: function(data){
             console.log("Cards after discarding "+data);
