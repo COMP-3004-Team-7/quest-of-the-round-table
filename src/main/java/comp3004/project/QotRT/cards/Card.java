@@ -7,7 +7,8 @@ import java.util.Random;
 
 public class Card {
     String name;
-    int battlepoints;
+    int MAXbattlepoints;
+    int MINbattlepoints;
     int bids;
     String specialevent;
     public String getName() {
@@ -15,8 +16,13 @@ public class Card {
 
     }
 
-    public int getBattlepoints() {
-        return battlepoints;
+
+    public int getMAXbattlepoints() {
+        return MAXbattlepoints;
+    }
+
+    public int getMINbattlepoints() {
+        return MINbattlepoints;
     }
 
     public int getBids() {
@@ -27,6 +33,25 @@ public class Card {
         return specialevent;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setMAXbattlepoints(int MAXbattlepoints) {
+        this.MAXbattlepoints = MAXbattlepoints;
+    }
+
+    public void setMINbattlepoints(int MINbattlepoints) {
+        this.MINbattlepoints = MINbattlepoints;
+    }
+
+    public void setBids(int bids) {
+        this.bids = bids;
+    }
+
+    public void setSpecialevent(String specialevent) {
+        this.specialevent = specialevent;
+    }
 
     public String toString() {
         StringBuffer display = new StringBuffer();

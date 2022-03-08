@@ -5,7 +5,8 @@ public class Giant extends Card{
     public Giant(){
         this.name = "Giant";
         //realcards.add(this);
-        this.battlepoints = 40;
+        this.MAXbattlepoints = 40;
+        this.MINbattlepoints = 40;
         this.bids = 0;
         this.specialevent = null;
         //System.out.println("added Giant to the deck of cards");

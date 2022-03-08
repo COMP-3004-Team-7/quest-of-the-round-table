@@ -5,7 +5,8 @@ public class Boar extends Card{
     public Boar(){
         this.name = "Boar";
         //realcards.add(this);
-        this.battlepoints = 5;
+        this.MINbattlepoints = 5;
+        this.MAXbattlepoints = 15;
         this.bids = 0;
         this.specialevent = null;
         //System.out.println("added Boar to the deck of cards");
