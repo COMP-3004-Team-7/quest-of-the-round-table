@@ -10,16 +10,28 @@ public class Player implements Principal {
     private String principalName; //Used for keeping track of Principal Session
     private Integer playerNumber;
     private ArrayList<Card> cards;
+    private String status;
+    private ArrayList<Card> weaponCardsPlayed;
 
     public Player(String name) {
         this.principalName = name;
         cards = new ArrayList<>();
+        weaponCardsPlayed = new ArrayList<>();
         playerNumber = 0;
+        status = "current";
     }
 
     public Player(String name, Integer playerNumber) {
         this.principalName = name;
         this.playerNumber = playerNumber;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public Integer getPlayerNumber() {
@@ -51,5 +63,13 @@ public class Player implements Principal {
 
     public void setCards(ArrayList<Card> cards) {
         this.cards = cards;
+    }
+
+    public ArrayList<Card> getWeaponCardsPlayed() {
+        return weaponCardsPlayed;
+    }
+
+    public void setWeaponCardsPlayed(ArrayList<Card> weaponCardsPlayed) {
+        this.weaponCardsPlayed = weaponCardsPlayed;
     }
 }

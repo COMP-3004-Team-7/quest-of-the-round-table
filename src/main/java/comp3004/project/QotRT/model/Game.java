@@ -10,10 +10,13 @@ public class Game {
     private String gameId;
     private GameStatus status;
     private AdventureDeck adventureDeck;
+    private ArrayList<Player> questingPlayers;
+    private Player mainPlayer;
 
     public Game() {
         adventureDeck = new AdventureDeck();
         players = new ArrayList<>();
+        questingPlayers = new ArrayList<>();
     }
 
     public void addPlayer(Player p){
@@ -48,4 +51,12 @@ public class Game {
     public AdventureDeck getAdventureDeck() {
         return adventureDeck;
     }
+
+    public ArrayList<Player> getQuestingPlayers() { return questingPlayers; }
+
+    public void setQuestingPlayers(ArrayList<Player> questingPlayers) { this.questingPlayers = questingPlayers; }
+
+    public Player getMainPlayer() { return mainPlayer; }
+
+    public void setMainPlayer(Player mainPlayer) { this.mainPlayer = mainPlayer; }
 }
