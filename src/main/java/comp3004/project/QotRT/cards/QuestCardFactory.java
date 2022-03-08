@@ -20,8 +20,8 @@ public class QuestCardFactory extends StoryCardFactory{
             return new RescueFairMaiden();
         }else if (item.equals("Search for the Holy Grail")) {
             return new HolyGrail();
-        }else if(item.equals("Rescue the Fair Maiden")) {
-            return new RescueFairMaiden();
+        }else if(item.equals("Test of the Green Knight")) {
+            return new GreenKnightQuest();
         }else {
             return null;
         }
