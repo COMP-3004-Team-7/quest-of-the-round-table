@@ -5,6 +5,8 @@ public class Horse extends Card{
         name = "Horse";
         //realcards.add(this);
         //battlepoints = 10;
+        this.MINbattlepoints = 10;
+        this.MAXbattlepoints = 10;
         bids = 0;
         specialevent = null;
         System.out.println("added Horse to the deck of cards");
