@@ -161,7 +161,7 @@ function connectToSpecificGame(){
                 document.getElementById("available-games").style.display = "none";
                 document.getElementById("draw-card-button").style.display = "none";
                 setTimeout(function() {
-                    stompClient.send("/topic/game-progress/" + gameId, {}, JSON.stringify(data));
+                    //stompClient.send("/topic/game-progress/" + gameId, {}, JSON.stringify(data));
                     stompClient.send("/app/update-principal/" + gameId, {},
                         JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
                 }, 500);

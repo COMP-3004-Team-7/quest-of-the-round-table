@@ -1,5 +1,5 @@
 import * as React from 'react';
-import $ from 'jquery';
+import ajax from 'can-ajax';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
@@ -33,21 +33,6 @@ class JoinDialog extends React.Component {
     }
 
     //API consumer
-    connectToSocket = (gameId) => {
-        this.props.stompService.connect({}, (frame) => {
-            console.log("connected to the frame: " + frame);
-            this.props.stompService.subscribe("/topic/game-progress/" + gameId, (response) => {
-                let data = JSON.parse(response.body)
-                console.log("Should fire event");
-                console.log(this.props.setGame);
-                this.props.setGame(data);
-            });
-            this.props.stompService.subscribe("/user/topic/game-progress/" + gameId, (response) => {
-                //Do Something With the Data -- Right now this is getting back the 12 initial cards that
-                //are dealt to the Client/Player
-            });
-        });
-    }
 
     connectToSpecificGame = () => {
         if(this.state.name == null || this.state.name === ""){
@@ -57,13 +42,14 @@ class JoinDialog extends React.Component {
             if(this.state.gameID == null || this.state.gameID === ""){
                 alert("please enter game ID")
             }
-            $.ajax({
+            ajax({
                 url: "/game/connect",
                 type: 'POST',
                 dataType: "json",
                 contentType: "application/json",
                 data: JSON.stringify({
                     "player": {
+                        "name": this.state.name,
                         "username": this.state.name
                     },
                     "gameId": this.state.gameID
@@ -71,16 +57,8 @@ class JoinDialog extends React.Component {
                 //Receiving a 'Game' Object on Success
                 success: (data) => {
                     this.setState({...this.state, gameID: data.gameId});
+                    this.props.connectToGame(data, this.state.name);
 
-                    this.connectToSocket(this.state.gameID);
-                    this.props.setGame(data);
-                    alert("You have joined a game. Game Id is: " + data.gameId)
-
-                    setTimeout(() => {
-                        this.props.stompService.send("/topic/game-progress/" + this.state.gameID, {}, JSON.stringify(data));
-                        this.props.stompService.send("/app/update-principal/" + this.state.gameID, {},
-                            JSON.stringify({"player": {"username": this.state.name},"gameId": this.state.gameID}));
-                    }, 500);
                     this.handleClose();
                 },
                 error: function(error){
@@ -95,27 +73,21 @@ class JoinDialog extends React.Component {
             alert("please enter name")
         }
         else{
-            $.ajax({
+            ajax({
                 url: "/game/start",
                 type: 'POST',
                 dataType: "json",
                 contentType: "application/json",
                 data: JSON.stringify({
+                    "name": this.state.name,
                     "username": this.state.name
                 }),
                 //Receiving a 'Game' Object on Success
                 success: (data) => {
                     this.setState({...this.state, gameID: data.gameId});
                     //playerType = 1;
-                    this.connectToSocket(this.state.gameID);
-                    this.props.setGame(data);
-                    alert("You have created a game. Game Id is: " + this.state.gameID);
+                    this.props.connectToGame(data, this.state.name);
 
-                    setTimeout(() => {
-                        this.props.stompService.send("/topic/game-progress/" + this.state.gameID, {}, JSON.stringify(data));
-                        this.props.stompService.send("/app/update-principal/" + this.state.gameID, {},
-                            JSON.stringify({"player": {"username": this.state.name},"gameId": this.state.gameID}));
-                    }, 500);
                     this.handleClose();
                 },
                 error: function(error){
@@ -123,11 +95,6 @@ class JoinDialog extends React.Component {
                 }
             });
         }
-    }
-
-
-    startGame(){
-        this.props.stompService.send("/app/play-game/" + this.state.gameID, {}, JSON.stringify({"player": {"username": this.state.name}, gameId: this.state.gameID}));
     }
 
     render() {
