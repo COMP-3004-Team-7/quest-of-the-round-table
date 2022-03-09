@@ -32,6 +32,7 @@ public class AdventureDeck {
 
     public AdventureDeck(){
         deck = new ArrayList<>();
+        discardPile = new ArrayList<>();
     }
 
     //Start of Game Deck

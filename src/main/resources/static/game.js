@@ -6,15 +6,17 @@ let playerName;
 $('document').ready(function(){
     //Hide game-board div until players connect
     document.getElementById("game-board").style.display = "none";
-
+    document.getElementById("sponsor-button").style.display = "none"; //hide
+    document.getElementById("decline-sponsor-button").style.display = "none"; //hide
 
     //Set Event Listeners
     document.getElementById("create-game-button").addEventListener("click", createGame);
     document.getElementById("join-game-button").addEventListener("click", connectToSpecificGame);
     document.getElementById("start-game-button").addEventListener("click", startGame);
-
     document.getElementById("draw-card-button").addEventListener("click", drawCard);
     document.getElementById("discard-button").addEventListener("click", discardCard);
+    document.getElementById("sponsor-button").addEventListener("click", sponsorQuest);
+        document.getElementById("decline-sponsor-button").addEventListener("click", declineQuest);
 });
 
 //connect to socket function (when user creates game or joins game)
@@ -42,6 +44,17 @@ function connectToSocket(gameId){
             //Do Something With the Data -- Right now this is getting back the 12 initial cards that
             //are dealt to the Client/Player
 
+        });
+        stompClient.subscribe("/topic/display-story-card/" + gameId, function (response){
+            let data = JSON.parse(response.body)
+            console.log(data);
+            alert("Story card is drawn: " + data.name)
+        });
+        stompClient.subscribe("/user/topic/sponsor-quest/" + gameId, function (response){
+            //Do Something With the Data -- Right now this is getting back the 12 initial cards that
+            //are dealt to the Client/Player
+            document.getElementById("sponsor-button").style.display = "block";
+            document.getElementById("decline-sponsor-button").style.display = "block";
         });
         stompClient.subscribe("/topic/discard-pile/" + gameId, function (response){
             let data = JSON.parse(response.body)
@@ -214,7 +227,42 @@ function discardCard(){
     })
     //stompClient.send("/app/discard-cards/" + gameId, {}, JSON.stringify({"player": {"username": playerName},"gameId": gameId}));
 }
-
+function sponsorQuest(){
+    $.ajax({
+        url: "/quest/sponsor-quest?gameId=" + gameId,
+        type: 'POST',
+        contentType: "application/json",
+        data: JSON.stringify({
+            "player": {"username": playerName},
+            "gameId": gameId}),
+        //Receiving nothing back -> update DOM elements to start game
+        success: function(data){
+        },
+        error: function(error){
+            console.log(error);
+        }
+    })
+}
+function declineQuest(){
+    $.ajax({
+        url: "/quest/decline-sponsor-quest?gameId=" + gameId,
+        type: 'POST',
+        contentType: "application/json",
+        data: JSON.stringify({
+            "player": {"username": playerName},
+            "gameId": gameId}),
+        //Receiving nothing back -> update DOM elements to start game
+        success: function(data){
+            if(data !== "Two player game"){ //IF the player size is 2 -> then the last player becomes the main player (race condition)
+                document.getElementById("sponsor-button").style.display = "none";
+                document.getElementById("decline-sponsor-button").style.display = "none";
+            }
+        },
+        error: function(error){
+            console.log(error);
+        }
+    })
+}
 //Update player names
 function updatePlayerNames(game){
     let players = game.players;

@@ -1,6 +1,7 @@
 package comp3004.project.QotRT.service;
 
 import comp3004.project.QotRT.cards.Card;
+import comp3004.project.QotRT.cards.StoryCard;
 import comp3004.project.QotRT.controller.dto.ConnectRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,8 @@ public class CardService {
         }
         //Get adventure deck -> buildDeck -> shuffle Deck
         game.getAdventureDeck().buildStartingDeck().shuffleDeck();
+        game.getStoryDeck().buildStoryDeck().shuffle();
+
         //Deal 12 Cards to Each Player
         for(int i = 0; i < game.getPlayers().size(); i++){
             Player p = game.getPlayers().get(i);
@@ -39,6 +42,11 @@ public class CardService {
             simpMessagingTemplate.convertAndSendToUser(
                     game.getPlayers().get(i).getName(),"/topic/cards-in-hand/"+gameId, game.getPlayers().get(i).getCards());
         }
+        StoryCard storyCard = game.getStoryDeck().drawCard();
+        game.setCurrentStoryCard(storyCard);
+        simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, storyCard);
+        simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId,storyCard);
+
         return "Dummy Data";
     }
 

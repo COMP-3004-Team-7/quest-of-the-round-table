@@ -22,6 +22,7 @@ public class GameService {
         player.setPlayerNumber(game.getNextPlayerNumber());
         game.addPlayer(player);
         game.setStatus(NEW);
+        game.setMainPlayer(player);
         GameStorage.getInstance().setGame(game);
         return game;
     }

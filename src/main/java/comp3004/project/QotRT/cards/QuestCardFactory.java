@@ -6,7 +6,7 @@ public class QuestCardFactory extends StoryCardFactory{
             return new ArthurEnemies();
         } else if (item.equals("Journey through the Enchanted Forest")) {
             return new EnchantedForest();
-        } else if (item.equals("Rapel the Saxon Raiders")) {
+        } else if (item.equals("Repel the Saxon Raiders")) {
             return new SaxonRaiders();
         } else if (item.equals("Boar Hunt")) {
             return new BoarHunt();
