@@ -68,9 +68,11 @@ public class QuestService {
     }
 
     //Player has selected a Card for a stage
-    public String selectFoeCardForSponsorStage(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+    public ResponseEntity selectFoeCardForSponsorStage(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
         //Error checking (is card submitted an actual foe card?)
-        //...
+        if(!request.getCard().getType().equals("Foe")){
+            return ResponseEntity.badRequest().body("Must submit Foe Card first before weapons");
+        }
 
         //Add card to the current stage
         Game game = gameService.getGame(gameId);
@@ -94,13 +96,16 @@ public class QuestService {
             }
         }
 
-        return "";
+        return ResponseEntity.ok().build();
     }
 
     public ResponseEntity addWeaponToSponsorStage(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
         Game game = gameService.getGame(gameId);
         //Error checking (is card submitted an actual weapon card?)
-        //...
+        if(!request.getCard().getType().equals("Weapon")){
+            return ResponseEntity.badRequest().body("Must submit weapons only to stage that already has a Foe");
+        }
+
         //Has weapon been played already?
         for(int i = 0; i < game.getSponsoredQuestCards()[request.getStage()-1].length; i++){
             if(game.getSponsoredQuestCards()[request.getStage()-1][i].getName()==request.getCard().getName()){
@@ -109,7 +114,7 @@ public class QuestService {
         }
 
         //Add card to current stage
-        game.addToSponsoredQuestCards(request.getCard(), request.getStage());
+        game.addToSponsoredQuestCards(request.getCard(), request.getStage()-1);
 
         //Update players hand
         for (int i=0; i<game.getPlayers().size(); i++){
@@ -139,8 +144,20 @@ public class QuestService {
         int numStages = game.getCurrentStoryCard().getStages();
         int totalBattlePointsInSubmittedStage = 0;
         for(int i = 0; i < game.getSponsoredQuestCards()[request.getStage()-1].length; i++){
-            //CHECK HERE IF WE SHOULD USE MIN OR MAX BATTLEPOINTS
-            totalBattlePointsInSubmittedStage += game.getSponsoredQuestCards()[request.getStage()][i].getMINbattlepoints();
+            //Checking if we should use Min vs Max battlepoints
+            if(game.getCurrentStoryCard().getFoevalue().equals("All")){
+                totalBattlePointsInSubmittedStage += game.getSponsoredQuestCards()[request.getStage()][i].getMAXbattlepoints();
+            }
+            else if(game.getCurrentStoryCard().getFoevalue().equals("All Saxons")
+                    && game.getSponsoredQuestCards()[request.getStage()][i].getName().contains("Saxon")){
+                totalBattlePointsInSubmittedStage += game.getSponsoredQuestCards()[request.getStage()][i].getMAXbattlepoints();
+            }
+            else if(game.getCurrentStoryCard().getFoevalue().equals(game.getSponsoredQuestCards()[request.getStage()][i].getName()) ){
+                totalBattlePointsInSubmittedStage += game.getSponsoredQuestCards()[request.getStage()][i].getMAXbattlepoints();
+            }
+            else{
+                totalBattlePointsInSubmittedStage += game.getSponsoredQuestCards()[request.getStage()][i].getMINbattlepoints();
+            }
         }
         ArrayList<Card> cards = new ArrayList<>();
         for(int i = 0; i < numStages-1; i++){
@@ -174,12 +191,18 @@ public class QuestService {
         }
         //Otherwise all is good and we can check if it is the last submitted quest or not
         else{
+            //Checking if this is the final submitted stage
             if(game.getCurrentStoryCard().getStages() == request.getStage()){
-                //Final Stage --> Send to 'quest is fully setup' and we can start asking each player if they want to join
-                //the quest
+                simpMessagingTemplate.convertAndSend("/topic/quest-build-complete/"+gameId
+                        , game.getCurrentStoryCard());
+                int indexToSendTo = game.getPlayers().indexOf(game.getMainPlayer())+1%game.getPlayers().size();
+                simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
+                        "/topic/quest-build-complete/"+gameId, game.getCurrentStoryCard());
             }
+            //Not last stage --> Ask Player to complete the next quest stage
             else{
-                //Not last stage --> Ask Player to complete the next quest stage
+                simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),
+                        "/topic/build-quest-stage/"+gameId, request.getStage()+1);
             }
         }
 
@@ -203,9 +226,20 @@ public class QuestService {
             //Give 1 card to each player currently on quest, update each player on current quest to 'current'
             //Alert to all players currently on the quest whether first stage is Test or Foe
             //and ask them to select cards to play on the quest
+            for(int i = 0; i < game.getQuestingPlayers().size();i++){
+                Card card = game.getAdventureDeck().drawCard();
+                game.getQuestingPlayers().get(i).getCards().add(card);
+                simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
+                        "/topic/play-against-quest-stage/"+gameId, game.getSponsoredQuestCards()[0][0].getType());
+                simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
+                        "/topic/cards-in-hand/"+gameId, game.getQuestingPlayers().get(i).getCards());
+            }
         }
         else{
             //Send to the next person asking them if they wish to join the quest
+            int indexToSendTo = index+1%game.getPlayers().size();
+            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
+                        "/topic/cards-in-hand/"+gameId, game.getPlayers().get(indexToSendTo).getCards());
         }
 
         return ResponseEntity.ok().build();
@@ -223,21 +257,99 @@ public class QuestService {
             }
         }
         if((index+1) % sizeOfPlayersList == game.getPlayers().indexOf(game.getMainPlayer())) {
+            //Checking if nobody joined quest -> main player draws card, update main player, draw new story card
             if(game.getQuestingPlayers().size()==0){
-                //Nobody joined the quest -> main player draws cards equal to number of cards played
-                //To make up the quest + additional cards equal to number of stages on the quest
-                //Update main player to next person clockwise and draw them a story card
+                int numStages = game.getCurrentStoryCard().getStages();
+                int numCardsPlayed = 0;
+                for(int i = 0; i < numStages; i++){
+                    for(int j = 0; j < game.getSponsoredQuestCards()[i].length; j++){
+                        numCardsPlayed++;
+                    }
+                }
+                for(int i = 0; i < numStages+numCardsPlayed; i++){
+                    Card card = game.getAdventureDeck().drawCard();
+                    game.getMainPlayer().getCards().add(card);
+                }
+                simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),
+                        "/topic/cards-in-hand/"+gameId, game.getMainPlayer().getCards());
+                //Updating main player
+                int indexOfNewMain = game.getPlayers().indexOf(game.getMainPlayer())+1%game.getPlayers().size();
+                game.setMainPlayer(game.getPlayers().get(indexOfNewMain));
+                //Send new drawn story card to everyone and ask main player if they wish to sponsor or not (if quest)
+                StoryCard storyCard = game.getStoryDeck().drawCard();
+                game.setCurrentStoryCard(storyCard);
+                simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, storyCard);
+                simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId,storyCard);
             }
             else {
-                //Give 1 card to each player currently on the quest
-                //Alert to all players currently on the quest whether first stage is Test or Foe
-                //and ask them to select cards to play on the quest
+                //1 card to each current questing player, send whether 1st stage is Foe or Test, send updated hands
+                for(int i = 0; i < game.getQuestingPlayers().size();i++){
+                    Card card = game.getAdventureDeck().drawCard();
+                    game.getQuestingPlayers().get(i).getCards().add(card);
+                    simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
+                            "/topic/play-against-quest-stage/"+gameId, game.getSponsoredQuestCards()[0][0].getType());
+                    simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
+                            "/topic/cards-in-hand/"+gameId, game.getQuestingPlayers().get(i).getCards());
+                }
             }
         }
         else{
             //Send to the next person asking them if they wish to join the quest
+            int indexToSendTo = index+1%game.getPlayers().size();
+            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
+                    "/topic/cards-in-hand/"+gameId, game.getPlayers().get(indexToSendTo).getCards());
         }
 
         return ResponseEntity.ok().build();
     }
+
+    public ResponseEntity submitCardAgainstFoe(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+        //Error checking (is card test or foe or any other nonplayable cards?)
+        Game game = gameService.getGame(gameId);
+        if(request.getCard().getName().equals("Foe") || request.getCard().getName().equals("Test")){
+            return ResponseEntity.badRequest().body("Must submit weapon/ally/amour");
+        }
+
+        //Check for duplicate weapons
+        for(int i = 0; i < game.getPlayers().size(); i++){
+            if(game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
+                Player p = game.getPlayers().get(i);
+                for(int j = 0; j < p.getWeaponCardsPlayed().size(); j++){
+                    if(p.getWeaponCardsPlayed().get(j).getName().equals(request.getCard().getName())){
+                        return ResponseEntity.badRequest().body("Cannot submit duplicate weapons");
+                    }
+                }
+                //Otherwise, all good and we add weapon card to players played cards
+                p.getWeaponCardsPlayed().add(request.getCard());
+                break;
+            }
+        }
+
+        return ResponseEntity.ok().build();
+    }
+
+    public ResponseEntity completeCardsPlayedAgainstFoe(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+        //Update this player to 'waiting'
+        Game game = gameService.getGame(gameId);
+        for(int i = 0; i < game.getQuestingPlayers().size(); i++){
+            if(game.getQuestingPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
+                game.getQuestingPlayers().get(i).setStatus("waiting");
+            }
+        }
+        //Check if all questing players have submitted their cards
+        int numWaiting = 0;
+        for(int i = 0; i < game.getQuestingPlayers().size(); i++){
+            if(game.getQuestingPlayers().get(i).getStatus().equals("waiting")){
+                numWaiting++;
+            }
+        }
+        if(numWaiting == game.getQuestingPlayers().size()){
+            //Check for who moves on to next stage, etc
+            //Also check if this is the last stage of quest --> check for winners of quest
+        }
+
+        return ResponseEntity.ok().build();
+    }
+
+
 }
