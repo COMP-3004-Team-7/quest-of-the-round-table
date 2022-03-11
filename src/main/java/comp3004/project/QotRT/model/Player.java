@@ -13,18 +13,33 @@ public class Player implements Principal {
     private String status;
     private ArrayList<Card> weaponCardsPlayed;
 
-    public Player(String name) {
-        this.principalName = name;
+    public Player() {
         cards = new ArrayList<>();
         weaponCardsPlayed = new ArrayList<>();
         playerNumber = 0;
         status = "current";
     }
 
-    public Player(String name, Integer playerNumber) {
-        this.principalName = name;
+    public Player(String principalName) {
+        this.principalName = principalName;
+        cards = new ArrayList<>();
+        weaponCardsPlayed = new ArrayList<>();
+        playerNumber = 0;
+        status = "current";
+    }
+
+    public Player(String username, Integer playerNumber) {
+        this.username = username;
         this.playerNumber = playerNumber;
     }
+
+    public Player(String username, String principalName, Integer playerNumber) {
+        this.username = username;
+        this.principalName = principalName;
+        this.playerNumber = playerNumber;
+    }
+
+
 
     public String getStatus() {
         return status;
@@ -71,5 +86,13 @@ public class Player implements Principal {
 
     public void setWeaponCardsPlayed(ArrayList<Card> weaponCardsPlayed) {
         this.weaponCardsPlayed = weaponCardsPlayed;
+    }
+
+    public String getPrincipalName() {
+        return principalName;
+    }
+
+    public void setPrincipalName(String principalName) {
+        this.principalName = principalName;
     }
 }
