@@ -16,6 +16,7 @@ public class Game {
     private ArrayList<Player> questingPlayers;
     private Player mainPlayer;
     private StoryCard currentStoryCard;
+    private Card[][] sponsoredQuestCards;
 
     public Game() {
         adventureDeck = new AdventureDeck();
@@ -24,14 +25,10 @@ public class Game {
         storyDeck = new StoryDeck();
     }
 
-    public void addPlayer(Player p){
-        players.add(p);
-    }
-
+    //GETTER AND SETTERS
     public ArrayList<Player> getPlayers() {
         return players;
     }
-
 
     public String getGameId() {
         return gameId;
@@ -67,6 +64,11 @@ public class Game {
 
     public void setCurrentStoryCard(StoryCard currentStoryCard) {
         this.currentStoryCard = currentStoryCard;
+        sponsoredQuestCards = new Card[currentStoryCard.getStages()][];
+    }
+
+    public Card[][] getSponsoredQuestCards() {
+        return sponsoredQuestCards;
     }
 
     public ArrayList<Player> getQuestingPlayers() { return questingPlayers; }
@@ -76,4 +78,19 @@ public class Game {
     public Player getMainPlayer() { return mainPlayer; }
 
     public void setMainPlayer(Player mainPlayer) { this.mainPlayer = mainPlayer; }
+
+
+    //METHODS
+    public void addPlayer(Player p){
+        players.add(p);
+    }
+
+    public void addToSponsoredQuestCards(Card c, Integer stage) {
+        int length = sponsoredQuestCards[stage].length;
+        sponsoredQuestCards[stage][length] = c;
+    }
+
+    public void addQuestingPlayer(Player p){
+        questingPlayers.add(p);
+    }
 }

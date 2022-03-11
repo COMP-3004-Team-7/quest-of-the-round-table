@@ -16,7 +16,7 @@ $('document').ready(function(){
     document.getElementById("draw-card-button").addEventListener("click", drawCard);
     document.getElementById("discard-button").addEventListener("click", discardCard);
     document.getElementById("sponsor-button").addEventListener("click", sponsorQuest);
-        document.getElementById("decline-sponsor-button").addEventListener("click", declineQuest);
+        document.getElementById("decline-sponsor-button").addEventListener("click", declineSponsorQuest);
 });
 
 //connect to socket function (when user creates game or joins game)
@@ -34,7 +34,6 @@ function connectToSocket(gameId){
         stompClient.subscribe("/user/topic/cards-in-hand/" + gameId, function (response){
             let data = JSON.parse(response.body)
             updateCardsInHand(data);
-
         });
         stompClient.subscribe("/topic/start-game/" + gameId, function (response){
             document.getElementById("draw-card-button").style.display = "block"; //show
@@ -236,14 +235,18 @@ function sponsorQuest(){
             "player": {"username": playerName},
             "gameId": gameId}),
         //Receiving nothing back -> update DOM elements to start game
-        success: function(data){
+        success: function(response){
+            console.log(response);
+            document.getElementById("sponsor-button").style.display = "none";
+            document.getElementById("decline-sponsor-button").style.display = "none";
+            alert("You have sponsored " + response.name);
         },
         error: function(error){
             console.log(error);
         }
     })
 }
-function declineQuest(){
+function declineSponsorQuest(){
     $.ajax({
         url: "/quest/decline-sponsor-quest?gameId=" + gameId,
         type: 'POST',
