@@ -6,42 +6,36 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import comp3004.project.QotRT.cards.Card;
-import comp3004.project.QotRT.cards.StoryCard;
-import comp3004.project.QotRT.controller.GameController;
+import comp3004.project.QotRT.cards.FoeCardFactory;
 import comp3004.project.QotRT.controller.dto.ConnectRequest;
+import comp3004.project.QotRT.controller.dto.SelectSponsorCardRequest;
 import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
 import comp3004.project.QotRT.service.GameService;
 import org.json.JSONObject;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class QotRtApplicationTests {
+class QotRtQuestTests {
 
 	@Autowired
 	private MockMvc mockMvc;
 	private SimpMessagingTemplate simpMessagingTemplate;
 	private final GameService gameService = new GameService();
 
-	//Test that sponosr
+	//Test that person who sponsors quest is changed to main player
 	@Test
 	void acceptSponsorQuestUpdatesMainPlayer() throws Exception {
 		//Creating the ObjectMapper object
@@ -151,6 +145,75 @@ class QotRtApplicationTests {
 				.andExpect(status().isOk()).andReturn();
 
 		Assertions.assertEquals(currentStoryCardName, game.getCurrentStoryCard().getName());
+	}
+
+	//Test that server accepts cards for first stage and updates accordingly
+	@Test
+	void foeSubmittedForFirstStageOfQuest() throws Exception{
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+		String jsonPlayer2 = mapper.writeValueAsString(p2);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		result = mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p2 starts it)
+		result = mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get current story card
+		Game game = gameService.getGame(gameId);
+		String currentStoryCardName = game.getCurrentStoryCard().getName();
+
+		//p2 accepts to sponsor quest card
+		result = mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p2 submits foe card
+		FoeCardFactory foeCardFactory = new FoeCardFactory();
+		Card card = foeCardFactory.createCard("Boar");
+		game.getMainPlayer().getCards().add(card);
+		SelectSponsorCardRequest selectSponsorCardRequest = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card,1);
+		String jsonSponsorCardRequest = mapper.writeValueAsString(selectSponsorCardRequest);
+
+		result = mockMvc.perform(post("/quest/select-foe-for-sponsored-quest-stage?gameId="+gameId)
+						.content(jsonSponsorCardRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+
+		Assertions.assertEquals("Boar", game.getStage(1).get(0).getName());
 	}
 }
 

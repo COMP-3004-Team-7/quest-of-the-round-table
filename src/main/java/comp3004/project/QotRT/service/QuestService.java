@@ -76,7 +76,7 @@ public class QuestService {
 
         //Add card to the current stage
         Game game = gameService.getGame(gameId);
-        game.addToSponsoredQuestCards(request.getCard(), request.getStage()-1);
+        game.addCardToStage(request.getCard(), request.getStage());
 
         //Update players hand
         for (int i=0; i<game.getPlayers().size(); i++){
@@ -107,14 +107,14 @@ public class QuestService {
         }
 
         //Has weapon been played already?
-        for(int i = 0; i < game.getSponsoredQuestCards()[request.getStage()-1].length; i++){
-            if(game.getSponsoredQuestCards()[request.getStage()-1][i].getName()==request.getCard().getName()){
+        for(int i = 0; i < game.getStage(request.getStage()).size(); i++){
+            if(game.getStage(request.getStage()).get(i).getName().equals(request.getCard().getName())){
                 return ResponseEntity.badRequest().body("Cannot submit duplicate weapon in same stage");
             }
         }
 
         //Add card to current stage
-        game.addToSponsoredQuestCards(request.getCard(), request.getStage()-1);
+        game.addCardToStage(request.getCard(), request.getStage());
 
         //Update players hand
         for (int i=0; i<game.getPlayers().size(); i++){
@@ -143,7 +143,7 @@ public class QuestService {
         Game game = gameService.getGame(gameId);
         int numStages = game.getCurrentStoryCard().getStages();
         int totalBattlePointsInSubmittedStage = 0;
-        for(int i = 0; i < game.getSponsoredQuestCards()[request.getStage()-1].length; i++){
+        for(int i = 0; i < game.getStage(request.getStage()).size(); i++){
             //Checking if we should use Min vs Max battlepoints
             if(game.getCurrentStoryCard().getFoevalue().equals("All")){
                 totalBattlePointsInSubmittedStage += game.getSponsoredQuestCards()[request.getStage()][i].getMAXbattlepoints();
@@ -159,14 +159,13 @@ public class QuestService {
                 totalBattlePointsInSubmittedStage += game.getSponsoredQuestCards()[request.getStage()][i].getMINbattlepoints();
             }
         }
-        ArrayList<Card> cards = new ArrayList<>();
+
         for(int i = 0; i < numStages-1; i++){
-            int numCardsInStage = game.getSponsoredQuestCards()[i].length;
+            int numCardsInStage = game.getStage(i).size();
             int totalBattlePointsInStage = 0;
-            cards = new ArrayList<>();
             for(int j = 0; j < numCardsInStage; j++){
-                totalBattlePointsInStage += game.getSponsoredQuestCards()[i][j].getMINbattlepoints();
-                cards.add(game.getSponsoredQuestCards()[i][j]);
+                //NEED LOGIC FOR MIN OR MAX BATTLEPOINTS
+                totalBattlePointsInStage += game.getStage(i).get(j).getMINbattlepoints();
             }
             if(totalBattlePointsInStage > totalBattlePointsInSubmittedStage){
                 isBigger = false;
@@ -179,8 +178,7 @@ public class QuestService {
             for (int i=0; i<game.getPlayers().size(); i++){
                 if(game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
                     Player p = game.getPlayers().get(i);
-                    cards.addAll(p.getCards());
-                    p.setCards(cards);
+                    p.getCards().addAll(game.getStage(request.getStage()));
                     //Send back updated player hand
                     simpMessagingTemplate.convertAndSendToUser(p.getName(),"/topic/cards-in-hand/"+gameId
                             ,p.getCards());
@@ -262,7 +260,7 @@ public class QuestService {
                 int numStages = game.getCurrentStoryCard().getStages();
                 int numCardsPlayed = 0;
                 for(int i = 0; i < numStages; i++){
-                    for(int j = 0; j < game.getSponsoredQuestCards()[i].length; j++){
+                    for(int j = 0; j < game.getStage(i).size(); j++){
                         numCardsPlayed++;
                     }
                 }
@@ -287,7 +285,7 @@ public class QuestService {
                     Card card = game.getAdventureDeck().drawCard();
                     game.getQuestingPlayers().get(i).getCards().add(card);
                     simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
-                            "/topic/play-against-quest-stage/"+gameId, game.getSponsoredQuestCards()[0][0].getType());
+                            "/topic/play-against-quest-stage/"+gameId, game.getStage(1).get(0));
                     simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
                             "/topic/cards-in-hand/"+gameId, game.getQuestingPlayers().get(i).getCards());
                 }

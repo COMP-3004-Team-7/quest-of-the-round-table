@@ -9,6 +9,16 @@ public class SelectSponsorCardRequest {
     private Card card;
     private Integer stage;
 
+    public SelectSponsorCardRequest() {
+    }
+
+    public SelectSponsorCardRequest(Player player, String gameId, Card card, Integer stage) {
+        this.player = player;
+        this.gameId = gameId;
+        this.card = card;
+        this.stage = stage;
+    }
+
     public Integer getStage() { return stage; }
 
     public Card getCard() { return card; }
