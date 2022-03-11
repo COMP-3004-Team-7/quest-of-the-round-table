@@ -6,6 +6,7 @@ public class Dagger extends Card{
         //battlepoints = 5;
         this.MINbattlepoints = 5;
         this.MAXbattlepoints = 5;
+        this.type = "Weapon";
         bids = 0;
         specialevent = null;
        // realcards.add(this);

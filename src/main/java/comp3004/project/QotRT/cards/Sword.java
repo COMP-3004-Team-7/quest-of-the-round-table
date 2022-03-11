@@ -9,6 +9,7 @@ public class Sword extends Card {
         //battlepoints = 10;
         this.MAXbattlepoints = 10;
         this.MINbattlepoints = 10;
+        this.type = "Weapon";
         bids = 0;
         specialevent = null;
         System.out.println("added Sword to the deck of cards");

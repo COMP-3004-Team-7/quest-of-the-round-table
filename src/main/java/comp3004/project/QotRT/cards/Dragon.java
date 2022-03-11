@@ -8,6 +8,7 @@ public class Dragon extends Card{
         this.MINbattlepoints = 50;
         this.MAXbattlepoints = 70;
         this.bids = 0;
+        this.type = "Foe";
         this.specialevent = null;
       //  System.out.println("added Dragon to the deck of cards");
     }

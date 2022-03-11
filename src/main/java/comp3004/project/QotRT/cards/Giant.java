@@ -8,6 +8,7 @@ public class Giant extends Card{
         this.MAXbattlepoints = 40;
         this.MINbattlepoints = 40;
         this.bids = 0;
+        this.type = "Foe";
         this.specialevent = null;
         //System.out.println("added Giant to the deck of cards");
     }

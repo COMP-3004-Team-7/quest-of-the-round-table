@@ -11,6 +11,7 @@ public class Card {
     int MINbattlepoints;
     int bids;
     String specialevent;
+    String type;
     public String getName() {
         return name;
 
@@ -48,6 +49,15 @@ public class Card {
     public void setBids(int bids) {
         this.bids = bids;
     }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
 
     public void setSpecialevent(String specialevent) {
         this.specialevent = specialevent;

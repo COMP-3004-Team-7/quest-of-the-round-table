@@ -5,5 +5,6 @@ public class SlayDragon extends StoryCard{
         this.name = "Slay the Dragon";
         this.foevalue = "Dragon";
         this.stages = 3;
+        this.type = "Quest";
     }
 }

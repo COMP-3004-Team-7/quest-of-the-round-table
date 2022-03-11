@@ -5,6 +5,7 @@ public class QuestingBeast extends StoryCard{
         this.name = "Search for the Questing Beast";
         this.foevalue = "";
         this.stages = 4;
+        this.type = "Quest";
 
     }
 }

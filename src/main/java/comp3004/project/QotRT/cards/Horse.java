@@ -8,6 +8,7 @@ public class Horse extends Card{
         this.MINbattlepoints = 10;
         this.MAXbattlepoints = 10;
         bids = 0;
+        this.type = "Weapon";
         specialevent = null;
         System.out.println("added Horse to the deck of cards");
     }

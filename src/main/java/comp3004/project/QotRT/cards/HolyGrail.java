@@ -5,5 +5,6 @@ public class HolyGrail extends StoryCard {
         this.name = "Search for the Holy Grail";
         this.foevalue = "All";
         this.stages = 5;
+        this.type = "Quest";
     }
 }

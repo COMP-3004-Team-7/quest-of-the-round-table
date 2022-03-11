@@ -6,6 +6,7 @@ public class Excalibur extends Card{
         //battlepoints = 30;
         this.MINbattlepoints = 30;
         this.MAXbattlepoints = 30;
+        this.type = "Weapon";
         bids = 0;
         specialevent = null;
         //realcards.add(this);

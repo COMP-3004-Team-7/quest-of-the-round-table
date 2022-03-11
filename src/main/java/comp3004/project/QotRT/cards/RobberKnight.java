@@ -9,6 +9,7 @@ public class RobberKnight extends Card {
         this.MAXbattlepoints = 15;
         this.MINbattlepoints = 15;
         this.bids = 0;
+        this.type = "Foe";
         this.specialevent = null;
         //System.out.println("added Robber Knight to the deck of cards");
     }

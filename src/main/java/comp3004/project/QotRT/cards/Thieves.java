@@ -10,6 +10,7 @@ public class Thieves extends Card {
         this.MINbattlepoints = 5;
         this.MAXbattlepoints = 5;
         this.bids = 0;
+        this.type = "Foe";
         this.specialevent = null;
         //System.out.println("added Thieves to the deck of cards");
     }

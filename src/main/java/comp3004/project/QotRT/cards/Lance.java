@@ -7,6 +7,7 @@ public class Lance extends Card{
         //battlepoints = 20;
         this.MAXbattlepoints = 20;
         this.MINbattlepoints = 20;
+        this.type = "Weapon";
         bids = 0;
         specialevent = null;
         System.out.println("added Lance to the deck of cards");

@@ -8,6 +8,7 @@ public class Mordred extends Card{
         this.MINbattlepoints= 30;
         this.MAXbattlepoints = 30;
         this.bids = 0;
+        this.type = "Foe";
         this.specialevent = null;
         //System.out.println("added Mordred to the deck of cards");
     }

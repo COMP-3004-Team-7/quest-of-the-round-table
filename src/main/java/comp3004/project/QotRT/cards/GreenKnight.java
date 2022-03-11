@@ -8,6 +8,7 @@ public class GreenKnight extends Card{
         this.MINbattlepoints = 25;
         this.MAXbattlepoints = 40;
         this.bids = 0;
+        this.type = "Foe";
         this.specialevent = null;
         //System.out.println("added Green Knight to the deck of cards");
     }

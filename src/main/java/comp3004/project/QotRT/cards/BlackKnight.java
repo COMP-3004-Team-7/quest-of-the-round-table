@@ -8,6 +8,7 @@ public class BlackKnight extends Card {
         this.MINbattlepoints = 25;
         this.MAXbattlepoints = 35;
         this.bids = 0;
+        this.type = "Foe";
         this.specialevent = null;
         //System.out.println("added Black Knight to the deck of cards");
     }

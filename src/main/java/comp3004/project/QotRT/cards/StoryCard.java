@@ -4,7 +4,7 @@ public class StoryCard {
     int stages;
     String name;
     String foevalue;
-
+    String type;
     public int getStages() {
         return stages;
     }
@@ -19,6 +19,14 @@ public class StoryCard {
 
     public String getFoevalue() {
         return foevalue;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public void setFoevalue(String foevalue) {

@@ -5,5 +5,6 @@ public class Queenhonor extends StoryCard{
         this.name = "Defend the Queen's Honour";
         this.foevalue = "All";
         this.stages = 4;
+        this.type = "Quest";
     }
 }

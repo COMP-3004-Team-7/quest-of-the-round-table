@@ -5,5 +5,6 @@ public class SaxonRaiders extends StoryCard{
         this.name = "Repel the Saxon Raiders";
         this.foevalue = "All Saxons";
         this.stages = 2;
+        this.type = "Quest";
     }
 }

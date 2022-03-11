@@ -5,5 +5,6 @@ public class RescueFairMaiden extends StoryCard{
         this.name = "Rescue the Fair Maiden";
         this.foevalue = "Black Knight";
         this.stages = 3;
+        this.type = "Quest";
     }
 }
