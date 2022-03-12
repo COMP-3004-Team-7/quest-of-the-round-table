@@ -82,7 +82,7 @@ public class QuestController {
 
     //Player completes submission against Foe of Quest
     @PostMapping("/complete-cards-played-against-foe")
-    public ResponseEntity completeCardsPlayedAgainstFoe(@RequestParam String gameId, @RequestBody ConnectRequest request) throws Exception {
+    public ResponseEntity completeCardsPlayedAgainstFoe(@RequestParam String gameId, @RequestBody SubmitStageRequest request) throws Exception {
         return questService.completeCardsPlayedAgainstFoe(gameId, request, simpMessagingTemplate, gameService);
     }
 }

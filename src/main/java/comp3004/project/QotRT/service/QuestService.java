@@ -146,17 +146,17 @@ public class QuestService {
         for(int i = 0; i < game.getStage(request.getStage()).size(); i++){
             //Checking if we should use Min vs Max battlepoints
             if(game.getCurrentStoryCard().getFoevalue().equals("All")){
-                totalBattlePointsInSubmittedStage += game.getSponsoredQuestCards()[request.getStage()][i].getMAXbattlepoints();
+                totalBattlePointsInSubmittedStage += game.getStage(request.getStage()).get(i).getMAXbattlepoints();
             }
             else if(game.getCurrentStoryCard().getFoevalue().equals("All Saxons")
-                    && game.getSponsoredQuestCards()[request.getStage()][i].getName().contains("Saxon")){
-                totalBattlePointsInSubmittedStage += game.getSponsoredQuestCards()[request.getStage()][i].getMAXbattlepoints();
+                    && game.getStage(request.getStage()).get(i).getName().contains("Saxon")){
+                totalBattlePointsInSubmittedStage += game.getStage(request.getStage()).get(i).getMAXbattlepoints();
             }
-            else if(game.getCurrentStoryCard().getFoevalue().equals(game.getSponsoredQuestCards()[request.getStage()][i].getName()) ){
-                totalBattlePointsInSubmittedStage += game.getSponsoredQuestCards()[request.getStage()][i].getMAXbattlepoints();
+            else if(game.getCurrentStoryCard().getFoevalue().equals(game.getStage(request.getStage()).get(i).getName())){
+                totalBattlePointsInSubmittedStage += game.getStage(request.getStage()).get(i).getMAXbattlepoints();
             }
             else{
-                totalBattlePointsInSubmittedStage += game.getSponsoredQuestCards()[request.getStage()][i].getMINbattlepoints();
+                totalBattlePointsInSubmittedStage += game.getStage(request.getStage()).get(i).getMINbattlepoints();
             }
         }
 
@@ -326,7 +326,7 @@ public class QuestService {
         return ResponseEntity.ok().build();
     }
 
-    public ResponseEntity completeCardsPlayedAgainstFoe(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+    public ResponseEntity completeCardsPlayedAgainstFoe(String gameId, SubmitStageRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
         //Update this player to 'waiting'
         Game game = gameService.getGame(gameId);
         for(int i = 0; i < game.getQuestingPlayers().size(); i++){
@@ -344,8 +344,45 @@ public class QuestService {
         if(numWaiting == game.getQuestingPlayers().size()){
             //Check for who moves on to next stage, etc
             //Also check if this is the last stage of quest --> check for winners of quest
-        }
 
+            //TOTAL FOE BATTLE POINTS
+            int foeStagePoints = 0;
+            for (int i=0 ; i<game.getStage(request.getStage()).size();i++){
+                //CHECK TO SEE IF THE MAX BATTLE POINT NEEDS TO BE USED OR MIN
+                //Checking if we should use Min vs Max battlepoints
+                if(game.getCurrentStoryCard().getFoevalue().equals("All")){
+                    foeStagePoints += game.getStage(request.getStage()).get(i).getMAXbattlepoints();
+                }
+                else if(game.getCurrentStoryCard().getFoevalue().equals("All Saxons")
+                        && game.getStage(request.getStage()).get(i).getName().contains("Saxon")){
+                    foeStagePoints += game.getStage(request.getStage()).get(i).getMAXbattlepoints();
+                }
+                else if(game.getCurrentStoryCard().getFoevalue().equals(game.getStage(request.getStage()).get(i).getName())){
+                    foeStagePoints += game.getStage(request.getStage()).get(i).getMAXbattlepoints();
+                }
+                else{
+                    foeStagePoints += game.getStage(request.getStage()).get(i).getMINbattlepoints();
+                }
+            }
+            //COMPARING THE WEAPONS CARD PLAYED TO THE TOTAL FOE BATTLE POINTS OF THE CURRENT STAGE
+            int weaponCardsPlayed = 0;
+            for(int i=0; i<game.getQuestingPlayers().size(); i++){
+                for(int j=0 ; j<game.getQuestingPlayers().get(i).getWeaponCardsPlayed().size(); j++) {
+                    weaponCardsPlayed += game.getQuestingPlayers().get(i).getWeaponCardsPlayed().get(i).getMAXbattlepoints();
+                    if(weaponCardsPlayed>=foeStagePoints){
+                        //THIS PLAYER HAS MOVED ON TO THE NEXT STAGE
+                        break;
+                    }
+                }
+                if(weaponCardsPlayed<foeStagePoints){
+                    //THIS PLAYER IS ELIMINATED FROM THE QUEST -> REMOVED FROM THE QUESTINGPLAYERSLIST
+                    //SEND SIMPMESSAGING TEMPLATE TO THE USER THAT HAVE BEEN REMOVED FROM THE LIST
+                    game.getQuestingPlayers().remove(i);
+                    i--;
+                }
+                weaponCardsPlayed = 0;
+            }
+        }
         return ResponseEntity.ok().build();
     }
 
