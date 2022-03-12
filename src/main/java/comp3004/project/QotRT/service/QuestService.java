@@ -160,7 +160,7 @@ public class QuestService {
             }
         }
 
-        for(int i = 0; i < numStages-1; i++){
+        for(int i = 1; i < numStages+1; i++){
             int numCardsInStage = game.getStage(i).size();
             int totalBattlePointsInStage = 0;
             for(int j = 0; j < numCardsInStage; j++){
@@ -204,7 +204,7 @@ public class QuestService {
             }
         }
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body(request.getStage()+1);
     }
 
     public ResponseEntity joinCurrentQuest(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
@@ -228,7 +228,7 @@ public class QuestService {
                 Card card = game.getAdventureDeck().drawCard();
                 game.getQuestingPlayers().get(i).getCards().add(card);
                 simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
-                        "/topic/play-against-quest-stage/"+gameId, game.getSponsoredQuestCards()[0][0].getType());
+                        "/topic/play-against-quest-stage/"+gameId, game.getStage(1).get(0).getType());
                 simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
                         "/topic/cards-in-hand/"+gameId, game.getQuestingPlayers().get(i).getCards());
             }
