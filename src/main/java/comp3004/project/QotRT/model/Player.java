@@ -12,12 +12,16 @@ public class Player implements Principal {
     private ArrayList<Card> cards;
     private String status;
     private ArrayList<Card> weaponCardsPlayed;
+    private Integer battlePoints;
+    private Integer shields;
 
     public Player() {
         cards = new ArrayList<>();
         weaponCardsPlayed = new ArrayList<>();
         playerNumber = 0;
         status = "current";
+        battlePoints = 5;
+        shields = 0;
     }
 
     public Player(String principalName) {
@@ -26,20 +30,40 @@ public class Player implements Principal {
         weaponCardsPlayed = new ArrayList<>();
         playerNumber = 0;
         status = "current";
+        battlePoints = 5;
+        shields = 0;
     }
 
     public Player(String username, Integer playerNumber) {
         this.username = username;
         this.playerNumber = playerNumber;
+        battlePoints = 5;
+        shields = 0;
     }
 
     public Player(String username, String principalName, Integer playerNumber) {
         this.username = username;
         this.principalName = principalName;
         this.playerNumber = playerNumber;
+        battlePoints = 5;
+        shields = 0;
     }
 
+    public Integer getShields() {
+        return shields;
+    }
 
+    public void setShields(Integer shields) {
+        this.shields = shields;
+    }
+
+    public Integer getBattlePoints() {
+        return battlePoints;
+    }
+
+    public void setBattlePoints(Integer battlePoints) {
+        this.battlePoints = battlePoints;
+    }
 
     public String getStatus() {
         return status;

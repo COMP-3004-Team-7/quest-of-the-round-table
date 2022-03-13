@@ -16,7 +16,9 @@ import java.util.ArrayList;
 @Service
 public class CardService {
 
+    private EventService eventService;
     public CardService(){
+        eventService = new EventService();
     }
 
     public String startGame(GameService gameService, String gameId, SimpMessagingTemplate simpMessagingTemplate){
@@ -45,7 +47,13 @@ public class CardService {
         StoryCard storyCard = game.getStoryDeck().drawCard();
         game.setCurrentStoryCard(storyCard);
         simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, storyCard);
-        simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId,storyCard);
+        if(storyCard.getType().equals("Quest")){
+            simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId,storyCard);
+        }
+        else if(storyCard.getType().equals("Event")){
+            eventService.doEvent(game);
+        }
+
 
         return "Dummy Data";
     }
