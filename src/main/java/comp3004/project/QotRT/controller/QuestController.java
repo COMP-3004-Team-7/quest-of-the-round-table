@@ -46,7 +46,7 @@ public class QuestController {
 
     //Select Foe for sponsor quest stages
     @PostMapping("/select-foe-for-sponsored-quest-stage")
-    public String selectFoeCardForSponsorStage(@RequestParam String gameId, @RequestBody SelectSponsorCardRequest selectSponsorCardRequest) throws Exception {
+    public ResponseEntity selectFoeCardForSponsorStage(@RequestParam String gameId, @RequestBody SelectSponsorCardRequest selectSponsorCardRequest) throws Exception {
         return questService.selectFoeCardForSponsorStage(gameId, selectSponsorCardRequest, simpMessagingTemplate, gameService);
     }
 
@@ -74,6 +74,15 @@ public class QuestController {
         return questService.declineToJoinCurrentQuest(gameId, request, simpMessagingTemplate, gameService);
     }
 
+    //Player plays card to battle Foe of Quest
+    @PostMapping("/submit-card-against-foe")
+    public ResponseEntity submitCardAgainstFoe(@RequestParam String gameId, @RequestBody SelectSponsorCardRequest request) throws Exception {
+        return questService.submitCardAgainstFoe(gameId, request, simpMessagingTemplate, gameService);
+    }
 
-
+    //Player completes submission against Foe of Quest
+    @PostMapping("/complete-cards-played-against-foe")
+    public ResponseEntity completeCardsPlayedAgainstFoe(@RequestParam String gameId, @RequestBody SubmitStageRequest request) throws Exception {
+        return questService.completeCardsPlayedAgainstFoe(gameId, request, simpMessagingTemplate, gameService);
+    }
 }

@@ -17,12 +17,22 @@ public class Game {
     private Player mainPlayer;
     private StoryCard currentStoryCard;
     private Card[][] sponsoredQuestCards;
+    private ArrayList<Card> firstStage;
+    private ArrayList<Card> secondStage;
+    private ArrayList<Card> thirdStage;
+    private ArrayList<Card> fourthStage;
+    private ArrayList<Card> fifthStage;
 
     public Game() {
         adventureDeck = new AdventureDeck();
         players = new ArrayList<>();
         questingPlayers = new ArrayList<>();
         storyDeck = new StoryDeck();
+        firstStage = new ArrayList<>();
+        secondStage = new ArrayList<>();
+        thirdStage = new ArrayList<>();
+        fourthStage = new ArrayList<>();
+        fifthStage = new ArrayList<>();
     }
 
     //GETTER AND SETTERS
@@ -64,7 +74,7 @@ public class Game {
 
     public void setCurrentStoryCard(StoryCard currentStoryCard) {
         this.currentStoryCard = currentStoryCard;
-        sponsoredQuestCards = new Card[currentStoryCard.getStages()][];
+        sponsoredQuestCards = new Card[currentStoryCard.getStages()][1];
     }
 
     public Card[][] getSponsoredQuestCards() {
@@ -89,6 +99,47 @@ public class Game {
         int length = sponsoredQuestCards[stage].length;
         sponsoredQuestCards[stage][length] = c;
     }
+
+    public ArrayList<Card> getStage(Integer stage){
+        if(stage == 1){
+            return firstStage;
+        }
+        else if(stage == 2){
+            return secondStage;
+        }
+        else if(stage == 3){
+            return thirdStage;
+        }
+        else if(stage == 4){
+            return fourthStage;
+        }
+        else if(stage == 5){
+            return fifthStage;
+        }
+        else{
+            return null;
+        }
+    }
+
+    public void addCardToStage(Card c, Integer stage){
+        if(stage == 1){
+            firstStage.add(c);
+        }
+        else if(stage == 2){
+            secondStage.add(c);
+        }
+        else if(stage == 3){
+            thirdStage.add(c);
+        }
+        else if(stage == 4){
+            fourthStage.add(c);
+        }
+        else if(stage == 5){
+            fifthStage.add(c);
+        }
+        else{}
+    }
+
 
     public void addQuestingPlayer(Player p){
         questingPlayers.add(p);

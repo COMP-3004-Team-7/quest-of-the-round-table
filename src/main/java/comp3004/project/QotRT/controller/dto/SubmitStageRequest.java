@@ -8,6 +8,15 @@ public class SubmitStageRequest {
     private String gameId;
     private Integer stage;
 
+    public SubmitStageRequest() {
+    }
+
+    public SubmitStageRequest(Player player, String gameId, Integer stage) {
+        this.player = player;
+        this.gameId = gameId;
+        this.stage = stage;
+    }
+
     public Integer getStage() { return stage; }
 
     public Player getPlayer() {

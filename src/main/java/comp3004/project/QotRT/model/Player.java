@@ -12,18 +12,74 @@ public class Player implements Principal {
     private ArrayList<Card> cards;
     private String status;
     private ArrayList<Card> weaponCardsPlayed;
+    private ArrayList<Card> allies;
+    private Integer battlePoints;
+    private Integer shields;
 
-    public Player(String name) {
-        this.principalName = name;
+    public Player() {
         cards = new ArrayList<>();
         weaponCardsPlayed = new ArrayList<>();
+        allies = new ArrayList<>();
         playerNumber = 0;
         status = "current";
+        battlePoints = 5;
+        shields = 0;
     }
 
-    public Player(String name, Integer playerNumber) {
-        this.principalName = name;
+    public Player(String principalName) {
+        this.principalName = principalName;
+        cards = new ArrayList<>();
+        weaponCardsPlayed = new ArrayList<>();
+        allies = new ArrayList<>();
+        playerNumber = 0;
+        status = "current";
+        battlePoints = 5;
+        shields = 0;
+    }
+
+    public Player(String username, Integer playerNumber) {
+        cards = new ArrayList<>();
+        weaponCardsPlayed = new ArrayList<>();
+        allies = new ArrayList<>();
+        this.username = username;
         this.playerNumber = playerNumber;
+        battlePoints = 5;
+        shields = 0;
+    }
+
+    public Player(String username, String principalName, Integer playerNumber) {
+        cards = new ArrayList<>();
+        weaponCardsPlayed = new ArrayList<>();
+        allies = new ArrayList<>();
+        this.username = username;
+        this.principalName = principalName;
+        this.playerNumber = playerNumber;
+        battlePoints = 5;
+        shields = 0;
+    }
+
+    public ArrayList<Card> getAllies() {
+        return allies;
+    }
+
+    public void setAllies(ArrayList<Card> allies) {
+        this.allies = allies;
+    }
+
+    public Integer getShields() {
+        return shields;
+    }
+
+    public void setShields(Integer shields) {
+        this.shields = shields;
+    }
+
+    public Integer getBattlePoints() {
+        return battlePoints;
+    }
+
+    public void setBattlePoints(Integer battlePoints) {
+        this.battlePoints = battlePoints;
     }
 
     public String getStatus() {
@@ -71,5 +127,13 @@ public class Player implements Principal {
 
     public void setWeaponCardsPlayed(ArrayList<Card> weaponCardsPlayed) {
         this.weaponCardsPlayed = weaponCardsPlayed;
+    }
+
+    public String getPrincipalName() {
+        return principalName;
+    }
+
+    public void setPrincipalName(String principalName) {
+        this.principalName = principalName;
     }
 }
