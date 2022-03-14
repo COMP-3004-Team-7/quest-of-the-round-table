@@ -51,7 +51,7 @@ public class CardService {
             simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId,storyCard);
         }
         else if(storyCard.getType().equals("Event")){
-            eventService.doEvent(game);
+            eventService.doEvent(game, simpMessagingTemplate);
         }
 
 
@@ -61,7 +61,7 @@ public class CardService {
     public ArrayList<Card> discardCards(String gameId, ConnectRequest request, GameService gameService, SimpMessagingTemplate simpMessagingTemplate){
         System.out.println("discard-cards request");
         Game game = gameService.getGame(gameId);
-        Card discardedCard = null;
+        Card discardedCard;
         //Remove discarded cards from players hand and move to adventure deck discard pile
         for (int i = 0; i < game.getPlayers().size(); i++) {
             if (game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())) {

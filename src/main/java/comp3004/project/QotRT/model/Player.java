@@ -12,12 +12,14 @@ public class Player implements Principal {
     private ArrayList<Card> cards;
     private String status;
     private ArrayList<Card> weaponCardsPlayed;
+    private ArrayList<Card> allies;
     private Integer battlePoints;
     private Integer shields;
 
     public Player() {
         cards = new ArrayList<>();
         weaponCardsPlayed = new ArrayList<>();
+        allies = new ArrayList<>();
         playerNumber = 0;
         status = "current";
         battlePoints = 5;
@@ -28,6 +30,7 @@ public class Player implements Principal {
         this.principalName = principalName;
         cards = new ArrayList<>();
         weaponCardsPlayed = new ArrayList<>();
+        allies = new ArrayList<>();
         playerNumber = 0;
         status = "current";
         battlePoints = 5;
@@ -35,6 +38,9 @@ public class Player implements Principal {
     }
 
     public Player(String username, Integer playerNumber) {
+        cards = new ArrayList<>();
+        weaponCardsPlayed = new ArrayList<>();
+        allies = new ArrayList<>();
         this.username = username;
         this.playerNumber = playerNumber;
         battlePoints = 5;
@@ -42,11 +48,22 @@ public class Player implements Principal {
     }
 
     public Player(String username, String principalName, Integer playerNumber) {
+        cards = new ArrayList<>();
+        weaponCardsPlayed = new ArrayList<>();
+        allies = new ArrayList<>();
         this.username = username;
         this.principalName = principalName;
         this.playerNumber = playerNumber;
         battlePoints = 5;
         shields = 0;
+    }
+
+    public ArrayList<Card> getAllies() {
+        return allies;
+    }
+
+    public void setAllies(ArrayList<Card> allies) {
+        this.allies = allies;
     }
 
     public Integer getShields() {
