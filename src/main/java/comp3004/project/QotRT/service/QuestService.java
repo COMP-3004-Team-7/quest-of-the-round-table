@@ -257,17 +257,7 @@ public class QuestService {
         if((index+1) % sizeOfPlayersList == game.getPlayers().indexOf(game.getMainPlayer())) {
             //Checking if nobody joined quest -> main player draws card, update main player, draw new story card
             if(game.getQuestingPlayers().size()==0){
-                int numStages = game.getCurrentStoryCard().getStages();
-                int numCardsPlayed = 0;
-                for(int i = 0; i < numStages; i++){
-                    for(int j = 0; j < game.getStage(i).size(); j++){
-                        numCardsPlayed++;
-                    }
-                }
-                for(int i = 0; i < numStages+numCardsPlayed; i++){
-                    Card card = game.getAdventureDeck().drawCard();
-                    game.getMainPlayer().getCards().add(card);
-                }
+                drawCardsForSponsor(game);
                 simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),
                         "/topic/cards-in-hand/"+gameId, game.getMainPlayer().getCards());
                 //Updating main player
@@ -281,14 +271,7 @@ public class QuestService {
             }
             else {
                 //1 card to each current questing player, send whether 1st stage is Foe or Test, send updated hands
-                for(int i = 0; i < game.getQuestingPlayers().size();i++){
-                    Card card = game.getAdventureDeck().drawCard();
-                    game.getQuestingPlayers().get(i).getCards().add(card);
-                    simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
-                            "/topic/play-against-quest-stage/"+gameId, game.getStage(1).get(0));
-                    simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
-                            "/topic/cards-in-hand/"+gameId, game.getQuestingPlayers().get(i).getCards());
-                }
+                sendNextStageToQuestingPlayer(gameId, simpMessagingTemplate, game, 1);
             }
         }
         else{
@@ -382,8 +365,47 @@ public class QuestService {
                 }
                 weaponCardsPlayed = 0;
             }
+            if(game.getCurrentStoryCard().getStages() == request.getStage()){
+             //TODO
+                //CHECK IF PLAYER(S) HAVE WON
+                //OTHERWISE, DRAW ANOTHER STORY CARD
+                for (int i=0; i < game.getQuestingPlayers().size(); i++){
+                    game.getQuestingPlayers().get(i).setShields(request.getStage()+game.getBonusShield());
+                    game.setBonusShield(0);
+                    game.getQuestingPlayers().get(i).setRank();
+                }
+                drawCardsForSponsor(game);
+            }
+            else{
+                sendNextStageToQuestingPlayer(gameId, simpMessagingTemplate, game, request.getStage());
+            }
         }
         return ResponseEntity.ok().build();
+    }
+
+    private void sendNextStageToQuestingPlayer(String gameId, SimpMessagingTemplate simpMessagingTemplate, Game game, int stage) {
+        for (int i=0 ; i < game.getQuestingPlayers().size(); i++){
+            Card card = game.getAdventureDeck().drawCard();
+            game.getQuestingPlayers().get(i).getCards().add(card);
+            simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
+                    "/topic/play-against-quest-stage/"+gameId, game.getStage(stage).get(0));
+            simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
+                    "/topic/cards-in-hand/"+gameId, game.getQuestingPlayers().get(i).getCards());
+        }
+    }
+
+    private void drawCardsForSponsor(Game game) {
+        int numStages = game.getCurrentStoryCard().getStages();
+        int numCardsPlayed = 0;
+        for(int i = 0; i < numStages; i++){
+            for(int j = 0; j < game.getStage(i).size(); j++){
+                numCardsPlayed++;
+            }
+        }
+        for(int i = 0; i < numStages+numCardsPlayed; i++){
+            Card card = game.getAdventureDeck().drawCard();
+            game.getMainPlayer().getCards().add(card);
+        }
     }
 
 

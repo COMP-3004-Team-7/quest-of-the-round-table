@@ -15,6 +15,7 @@ public class Player implements Principal {
     private ArrayList<Card> allies;
     private Integer battlePoints;
     private Integer shields;
+    private String rank;
 
     public Player() {
         cards = new ArrayList<>();
@@ -24,6 +25,7 @@ public class Player implements Principal {
         status = "current";
         battlePoints = 5;
         shields = 0;
+        rank = "Squire";
     }
 
     public Player(String principalName) {
@@ -35,6 +37,7 @@ public class Player implements Principal {
         status = "current";
         battlePoints = 5;
         shields = 0;
+        rank = "Squire";
     }
 
     public Player(String username, Integer playerNumber) {
@@ -45,6 +48,7 @@ public class Player implements Principal {
         this.playerNumber = playerNumber;
         battlePoints = 5;
         shields = 0;
+        rank = "Squire";
     }
 
     public Player(String username, String principalName, Integer playerNumber) {
@@ -56,6 +60,7 @@ public class Player implements Principal {
         this.playerNumber = playerNumber;
         battlePoints = 5;
         shields = 0;
+        rank = "Squire";
     }
 
     public ArrayList<Card> getAllies() {
@@ -135,5 +140,26 @@ public class Player implements Principal {
 
     public void setPrincipalName(String principalName) {
         this.principalName = principalName;
+    }
+
+    public String getRank (){
+        return rank;
+    }
+
+    public void setRank (){
+        if(this.shields>=5 && this.rank.equals("Squire")){
+            this.rank = "Knight";
+            this.shields = this.shields - 5;
+            this.battlePoints = 10;
+        }
+        else if (this.shields>=7 && this.rank.equals("Knight")){
+            this.rank = "Champion Knight";
+            this.shields = this.shields - 7;
+            this.battlePoints = 20;
+        }
+        else if (this.shields>=10 && this.rank.equals("Champion Knight")) {
+            this.rank = "Knight of the Round Table";
+
+        }
     }
 }

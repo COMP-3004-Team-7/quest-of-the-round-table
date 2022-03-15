@@ -22,6 +22,7 @@ public class Game {
     private ArrayList<Card> thirdStage;
     private ArrayList<Card> fourthStage;
     private ArrayList<Card> fifthStage;
+    private int bonusShield = 0;
 
     public Game() {
         adventureDeck = new AdventureDeck();
@@ -140,6 +141,12 @@ public class Game {
         else{}
     }
 
+    public int getBonusShield() {
+        return bonusShield;
+    }
+    public void setBonusShield(int value){
+        this.bonusShield = value;
+    }
 
     public void addQuestingPlayer(Player p){
         questingPlayers.add(p);
