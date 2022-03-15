@@ -2,6 +2,7 @@ package comp3004.project.QotRT.controller;
 
 import comp3004.project.QotRT.cards.Card;
 import comp3004.project.QotRT.controller.dto.ConnectRequest;
+import comp3004.project.QotRT.controller.dto.DiscardRequest;
 import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
 import comp3004.project.QotRT.service.CardService;
@@ -10,14 +11,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.ArrayList;
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/game")
@@ -56,22 +54,22 @@ public class GameController {
     //User Pressed 'Start Game' Button
     @PostMapping("/play-game")
     //@MessageMapping("/play-game/{gameId}")
-    public String playGame(@RequestParam String gameId, @RequestBody ConnectRequest request) throws Exception {
-        return cardService.startGame(gameService,gameId,simpMessagingTemplate);
+    public ArrayList<Card> playGame(@RequestParam String gameId, @RequestBody ConnectRequest request) throws Exception {
+        return cardService.startGame(gameService, gameId, simpMessagingTemplate);
     }
     //PART 1 - BASIC REMOVAL
     @PostMapping("/discard-cards")
     //@MessageMapping("/discard-cards/{gameId}")
     //@SendTo("/topic/discard-pile/{gameId}")
-    public ArrayList<Card> discardCards(@DestinationVariable String gameId, @RequestBody ConnectRequest request) throws Exception {
-        return cardService.discardCards(gameId,request,gameService,simpMessagingTemplate);
+    public ArrayList<Card> discardCards(@DestinationVariable String gameId, @RequestBody DiscardRequest request) throws Exception {
+        return cardService.discardCards(request, gameService, simpMessagingTemplate);
     }
 
     //User Pressed 'Draw Card' Button
     @PostMapping("/draw-card")
     //@MessageMapping("/draw-card/{gameId}")
     public ArrayList<Card> drawCard(@RequestParam String gameId, @RequestBody ConnectRequest request) throws Exception {
-        return cardService.drawCard(gameId,request,gameService);
+        return cardService.drawCard(gameId, request, gameService, simpMessagingTemplate);
     }
 
     //This is used to just update the principal names connect players
