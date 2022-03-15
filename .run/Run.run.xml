@@ -1,7 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run" type="CompoundRunConfigurationType">
-    <toRun name="Maven Build (must use for UI work)" type="MavenRunConfiguration" />
-    <toRun name="QotRtApplication" type="SpringBootApplicationConfigurationType" />
-    <method v="2" />
-  </configuration>
-</component>

@@ -16,8 +16,8 @@ import SockJs from 'sockjs-client'
 class Game extends React.Component {
     constructor(props) {
         super(props);
-        //this.stompService = Stomp.client("ws://"+window.location.host+"/ws");
-        this.stompService = Stomp.over(function(){return new SockJs("/ws");});
+        this.stompService = Stomp.client("ws://"+window.location.host+"/ws");
+        //this.stompService = Stomp.over(function(){return new SockJs("/ws");});
 
         this.state = {
             gameID: "",
@@ -42,10 +42,10 @@ class Game extends React.Component {
                 this.setGame(JSON.parse(response.body), name);
             });
             this.stompService.subscribe("/topic/discard-pile/" + game.gameId, (response) => {
-                console.log(JSON.parse(response.body));
+                this.setState({...this.state, discardPile: JSON.parse(response.body)});
             });
-            this.stompService.subscribe("/user/topic/cards-in-hand/" + game.gameId, (response) => {
-                console.log(JSON.parse(response.body));
+            this.stompService.subscribe("/topic/cards-in-hand/" + game.gameId+"/"+this.state.name, (response) => {
+                this.setState({...this.state, hand: JSON.parse(response.body)});
             });
             this.stompService.send("/topic/game-progress/" + this.state.gameID, {}, JSON.stringify(game));
             this.stompService.send("/game/update-principal/" + this.state.gameID, {},
@@ -63,22 +63,26 @@ class Game extends React.Component {
             type: 'POST',
             dataType: "json",
             contentType: "application/json",
-            data: JSON.stringify({player: {username: this.state.name}, gameId: this.state.gameID}),
-            success: this.updateHand
+            data: JSON.stringify({player: {username: this.state.name}, gameId: this.state.gameID})
         });
     }
 
     updateHand = (data) =>{
-        this.stompService.send("/topic/start-game/" + this.state.gameID, {}, JSON.stringify({"player": {"username": this.state.name},"gameId": this.state.gameID}));
-        console.log(data)
+        //this.stompService.send("/topic/start-game/" + this.state.gameID, {}, JSON.stringify({"player": {"username": this.state.name},"gameId": this.state.gameID}));
+        console.log("received")
+        console.log(JSON.parse(data));
+        this.setState({...this.state, hand:JSON.parse(data)});
     }
+
 
 
 
     render(){
         return(<React.Fragment>
             <JoinDialog stompService = {this.stompService} connectToGame = {this.connectToGame}/>
-            <Stack>
+            <GameBottomAppBar gameID={this.state.gameID??""} name={this.state.name}/>
+            <GameRightDrawer gameID={this.state.gameID??""} players={this.state.game.players??""} name={this.state.name} startGame={this.startGame}/>
+            <Stack sx={{flexGrow: 1, width: "80%", anchor: "left"}}>
                 <p>
                     Main window
                 </p>
@@ -86,14 +90,13 @@ class Game extends React.Component {
                     <p>
                         Card Stack 1
                     </p>
-                    <p>
-                        Card Stack 2
-                    </p>
-                    <CardDeck />
+
+                    <CardDeck cards={this.state.discardPile} interactive={false}/>
+
+                    <CardDeck cards={this.state.hand} interactive={true} name={this.state.name} gameID={this.state.gameID}/>
                 </Stack>
             </Stack>
-            <GameBottomAppBar/>
-            <GameRightDrawer gameID={this.state.gameID??""} players={this.state.game.players??""} name={this.state.name} startGame={this.startGame}/>
+
         </React.Fragment>);
     }
 }
