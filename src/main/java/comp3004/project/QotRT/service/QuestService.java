@@ -35,6 +35,8 @@ public class QuestService {
 
             game.setMainPlayer(game.getPlayers().get((game.getPlayers().indexOf(game.getMainPlayer())+1)%sizeOfPlayersList));
             System.out.println(game.getMainPlayer().getUsername());
+            //Update player statuses
+            updatePlayerStatuses(game);
 
             simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, game.getCurrentStoryCard());
 
@@ -193,7 +195,9 @@ public class QuestService {
             if(game.getCurrentStoryCard().getStages() == request.getStage()){
                 simpMessagingTemplate.convertAndSend("/topic/quest-build-complete/"+gameId
                         , game.getCurrentStoryCard());
+                //Update player statuses and send to next user in line to see if they want to join or not
                 int indexToSendTo = game.getPlayers().indexOf(game.getMainPlayer())+1%game.getPlayers().size();
+                updatePlayerStatusesClockwise(game, game.getPlayers().indexOf(game.getMainPlayer()));
                 simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
                         "/topic/quest-build-complete/"+gameId, game.getCurrentStoryCard());
             }
@@ -227,6 +231,7 @@ public class QuestService {
             for(int i = 0; i < game.getQuestingPlayers().size();i++){
                 Card card = game.getAdventureDeck().drawCard();
                 game.getQuestingPlayers().get(i).getCards().add(card);
+                game.getQuestingPlayers().get(i).setStatus("current");
                 simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
                         "/topic/play-against-quest-stage/"+gameId, game.getStage(1).get(0).getType());
                 simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
@@ -236,20 +241,24 @@ public class QuestService {
         else{
             //Send to the next person asking them if they wish to join the quest
             int indexToSendTo = index+1%game.getPlayers().size();
+            updatePlayerStatusesClockwise(game, index);
+//            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
+//                        "/topic/cards-in-hand/"+gameId, game.getPlayers().get(indexToSendTo).getCards());
             simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
-                        "/topic/cards-in-hand/"+gameId, game.getPlayers().get(indexToSendTo).getCards());
+                    "/topic/quest-build-complete/"+gameId, game.getCurrentStoryCard());
         }
 
         return ResponseEntity.ok().build();
     }
 
     public ResponseEntity declineToJoinCurrentQuest(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
-        //Check if this is the last person to join the quest
+        //Check if this is the last person to join the quest (also update the decliner to 'waiting')
         Game game = gameService.getGame(gameId);
         int index = 0;
         int sizeOfPlayersList = game.getPlayers().size();
         for (int i = 0; i < game.getPlayers().size(); i++) {
             if (game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())) {
+                game.getPlayers().get(i).setStatus("waiting");
                 index = i;
                 break;
             }
@@ -263,6 +272,7 @@ public class QuestService {
                 //Updating main player
                 int indexOfNewMain = game.getPlayers().indexOf(game.getMainPlayer())+1%game.getPlayers().size();
                 game.setMainPlayer(game.getPlayers().get(indexOfNewMain));
+                updatePlayerStatuses(game);
                 //Send new drawn story card to everyone and ask main player if they wish to sponsor or not (if quest)
                 StoryCard storyCard = game.getStoryDeck().drawCard();
                 game.setCurrentStoryCard(storyCard);
@@ -277,8 +287,11 @@ public class QuestService {
         else{
             //Send to the next person asking them if they wish to join the quest
             int indexToSendTo = index+1%game.getPlayers().size();
+            updatePlayerStatusesClockwise(game, index);
+//            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
+//                    "/topic/cards-in-hand/"+gameId, game.getPlayers().get(indexToSendTo).getCards());
             simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
-                    "/topic/cards-in-hand/"+gameId, game.getPlayers().get(indexToSendTo).getCards());
+                    "/topic/quest-build-complete/"+gameId, game.getCurrentStoryCard());
         }
 
         return ResponseEntity.ok().build();
@@ -383,7 +396,19 @@ public class QuestService {
         return ResponseEntity.ok().build();
     }
 
+
+    //HELPER METHODS
+
     private void sendNextStageToQuestingPlayer(String gameId, SimpMessagingTemplate simpMessagingTemplate, Game game, int stage) {
+        //Update players (everyone except main player gets set to current)
+        for(int i = 0; i < game.getPlayers().size();i++){
+            if(game.getPlayers().get(i).equals(game.getMainPlayer())){
+                game.getPlayers().get(i).setStatus("waiting");
+            }
+            else{
+                game.getPlayers().get(i).setStatus("current");
+            }
+        }
         for (int i=0 ; i < game.getQuestingPlayers().size(); i++){
             Card card = game.getAdventureDeck().drawCard();
             game.getQuestingPlayers().get(i).getCards().add(card);
@@ -408,5 +433,29 @@ public class QuestService {
         }
     }
 
+    private void updatePlayerStatuses(Game game) {
+        //Quest card -> Main player is current player
+        if(game.getCurrentStoryCard().getType().equals("Quest")){
+            for(int i = 0; i < game.getPlayers().size();i++){
+                if(game.getPlayers().get(i).equals(game.getMainPlayer())){
+                    game.getPlayers().get(i).setStatus("current");
+                }
+                else{
+                    game.getPlayers().get(i).setStatus("waiting");
+                }
+            }
+        }
+        //Event card -> set everyone to waiting (Event Service will change players to current if they need to do something)
+        else if(game.getCurrentStoryCard().getType().equals("Event")){
+            for(int i = 0; i < game.getPlayers().size();i++){
+                game.getPlayers().get(i).setStatus("waiting");
+            }
+        }
+    }
 
+    private void updatePlayerStatusesClockwise(Game game, int indexOfWaiting) {
+        int indexOfNextCurrent = indexOfWaiting+1%game.getPlayers().size();
+        game.getPlayers().get(indexOfWaiting).setStatus("waiting");
+        game.getPlayers().get(indexOfNextCurrent).setStatus("current");
+    }
 }
