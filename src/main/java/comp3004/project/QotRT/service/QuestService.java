@@ -98,7 +98,7 @@ public class QuestService {
             }
         }
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body("Successfully selects a foe card for stage");
     }
 
     public ResponseEntity addWeaponToSponsorStage(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
@@ -136,7 +136,7 @@ public class QuestService {
             }
         }
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body("Successfully added a weapon card to stage! ");
     }
 
     public ResponseEntity submitSponsorStage(String gameId, SubmitStageRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
@@ -248,7 +248,7 @@ public class QuestService {
                     "/topic/quest-build-complete/"+gameId, game.getCurrentStoryCard());
         }
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body("Successfully joined the quest!");
     }
 
     public ResponseEntity declineToJoinCurrentQuest(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
@@ -294,7 +294,7 @@ public class QuestService {
                     "/topic/quest-build-complete/"+gameId, game.getCurrentStoryCard());
         }
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body("Successfully declined to join quest!");
     }
 
     public ResponseEntity submitCardAgainstFoe(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
@@ -319,7 +319,7 @@ public class QuestService {
             }
         }
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body("Submitted card to battle the foe");
     }
 
     public ResponseEntity completeCardsPlayedAgainstFoe(String gameId, SubmitStageRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
@@ -393,7 +393,7 @@ public class QuestService {
                 sendNextStageToQuestingPlayer(gameId, simpMessagingTemplate, game, request.getStage());
             }
         }
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body("Success");
     }
 
 
