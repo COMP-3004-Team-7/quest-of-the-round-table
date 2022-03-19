@@ -35,6 +35,11 @@ function connectToSocket(gameId){
             let data = JSON.parse(response.body)
             updateCardsInHand(data);
         });
+        //Updated Route --> for testing currently
+        stompClient.subscribe("/topic/cards-in-hand/" + gameId + "/"+playerName, function (response){
+            let data = JSON.parse(response.body)
+            updateCardsInHand(data);
+        });
         stompClient.subscribe("/topic/start-game/" + gameId, function (response){
             document.getElementById("draw-card-button").style.display = "block"; //show
             document.getElementById("start-game-button").style.display = "none"; //hide

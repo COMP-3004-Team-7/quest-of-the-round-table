@@ -1,12 +1,17 @@
 package comp3004.project.QotRT.service;
 
 import comp3004.project.QotRT.cards.*;
+import comp3004.project.QotRT.controller.dto.DiscardRequest;
 import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+
+@Service
 
 public class EventService {
 
@@ -66,6 +71,7 @@ public class EventService {
         else if(game.getCurrentStoryCard() instanceof Plague){
             if(game.getMainPlayer().getShields() >= 2){
                 game.getMainPlayer().setShields(game.getMainPlayer().getShields()-2);
+                //TODO
                 //Send simp message to player
             }
         }
@@ -107,24 +113,15 @@ public class EventService {
                         //TODO
                         //SEND MESSAGE TO USER TO DISCARD A WEAPON CARD
                         //simpMessagingTemplate.convertAndSendToUser();
-                        //flag = true;
-                        //break
+                        flag = true;
+                        break;
                     }
                     else if (highRankingPlayers.get(i).getCards().get(j).getType().equals("Foe")){
                         numFoes ++;
                         numFoeCardsForHighPlayers.replace(highRankingPlayers.get(i),numFoes);
                     }
                 }
-                numFoes = 0;
-            }
-
-            if (flag){
-                //TODO
-                //DO SOMETHING TO HANDLE WEAPON CARDS
-                //SEND SIMPMESSAGETEMPLATE
-            }
-            else {
-                for (int i = 0; i < highRankingPlayers.size(); i++) {
+                if (!flag){
                     if (numFoeCardsForHighPlayers.get(highRankingPlayers.get(i)) > 2) {
                         //TODO
                         //DISCARD 2 FOE CARDS
@@ -141,6 +138,7 @@ public class EventService {
                                 "/topic/cards-in-hand/" + game.getGameId(), highRankingPlayers.get(i).getCards());
                     }
                 }
+                numFoes = 0;
             }
         }
         //Lowest ranked player(s) draw 2 adventure cards
@@ -189,4 +187,63 @@ public class EventService {
         }
     }
 
+    public ResponseEntity discardWeapon(String gameId, DiscardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+        System.out.println("discard weapon card request");
+        System.out.println("PLAYER: " + request.getPlayer());
+        System.out.println("GAMEID: " + request.getGameId());
+        Game game = gameService.getGame(request.getGameId());
+        Card discarded;
+        if (!request.getCard().getType().equals("Weapon")){
+            return ResponseEntity.badRequest().body("ERROR:THE CARD IS NOT A WEAPON");
+        }
+        //Remove discarded cards from players hand and move to adventure deck discard pile
+        for (int i = 0 ; i < game.getPlayers().size(); i++){
+            if (game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
+                // Card discardedCard = game.getPlayers().get(i).getCards().remove(//INDEX)
+                for (int j = 0; j<game.getPlayers().get(i).getCards().size(); j++){
+                    if (game.getPlayers().get(i).getCards().get(j).getName().equals(request.getCard().getName())){
+                        discarded = game.getPlayers().get(i).getCards().remove(j);
+                        game.getAdventureDeck().discardCard(discarded);
+                        break;
+                    }
+                }
+                //Send card back to player
+                simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+request.getGameId()+"/"+
+                        game.getPlayers().get(i).getUsername(), game.getPlayers().get(i).getCards());
+                break;
+            }
+        }
+        simpMessagingTemplate.convertAndSend("/topic/discard-pile/" + request.getGameId(), game.getAdventureDeck().getDiscardPile());
+        return ResponseEntity.ok().body("");
+    }
+
+    public ResponseEntity discardFoe(String gameId, DiscardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+        System.out.println("discard weapon card request");
+        System.out.println("PLAYER: " + request.getPlayer());
+        System.out.println("GAMEID: " + request.getGameId());
+        Game game = gameService.getGame(request.getGameId());
+        Card discarded;
+        if (!request.getCard().getType().equals("Foe")){
+            return ResponseEntity.badRequest().body("ERROR:THE CARD IS NOT A FOE");
+        }
+        //Remove discarded cards from players hand and move to adventure deck discard pile
+        for (int i = 0 ; i < game.getPlayers().size(); i++){
+            if (game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
+                // Card discardedCard = game.getPlayers().get(i).getCards().remove(//INDEX)
+                for (int j = 0; j<game.getPlayers().get(i).getCards().size(); j++){
+                    if (game.getPlayers().get(i).getCards().get(j).getName().equals(request.getCard().getName())){
+                        discarded = game.getPlayers().get(i).getCards().remove(j);
+                        game.getAdventureDeck().discardCard(discarded);
+                        break;
+                    }
+                }
+                //Send card back to player
+                simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+request.getGameId()+"/"+
+                        game.getPlayers().get(i).getUsername(), game.getPlayers().get(i).getCards());
+                break;
+            }
+        }
+        simpMessagingTemplate.convertAndSend("/topic/discard-pile/" + request.getGameId(), game.getAdventureDeck().getDiscardPile());
+        return ResponseEntity.ok().body("");
+    }
 }

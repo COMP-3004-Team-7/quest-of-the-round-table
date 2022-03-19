@@ -46,6 +46,8 @@ public class CardService {
         StoryCard storyCard = game.getStoryDeck().drawCard();
         game.setCurrentStoryCard(storyCard);
         simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, storyCard);
+        //Update player statuses
+        updatePlayerStatuses(game);
         if(storyCard.getType().equals("Quest")){
             simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId,storyCard);
         }
@@ -56,6 +58,7 @@ public class CardService {
 
         return game.getPlayers().get(0).getCards();
     }
+
 
     public ArrayList<Card> discardCards(DiscardRequest request, GameService gameService, SimpMessagingTemplate simpMessagingTemplate){
         System.out.println("discard-cards request");
@@ -110,5 +113,27 @@ public class CardService {
             }
         }
         return null;
+    }
+
+
+    //HELPER METHODS
+    private void updatePlayerStatuses(Game game) {
+        //Quest card -> Main player is current player
+        if(game.getCurrentStoryCard().getType().equals("Quest")){
+            for(int i = 0; i < game.getPlayers().size();i++){
+                if(game.getPlayers().get(i).equals(game.getMainPlayer())){
+                    game.getPlayers().get(i).setStatus("current");
+                }
+                else{
+                    game.getPlayers().get(i).setStatus("waiting");
+                }
+            }
+        }
+        //Event card -> set everyone to waiting (Event Service will change players to current if they need to do something)
+        else if(game.getCurrentStoryCard().getType().equals("Event")){
+            for(int i = 0; i < game.getPlayers().size();i++){
+                game.getPlayers().get(i).setStatus("waiting");
+            }
+        }
     }
 }
