@@ -208,7 +208,7 @@ class QotRtQuestTests {
 		SelectSponsorCardRequest selectSponsorCardRequest = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card,1);
 		String jsonSponsorCardRequest = mapper.writeValueAsString(selectSponsorCardRequest);
 
-		result = mockMvc.perform(post("/quest/select-foe-for-sponsored-quest-stage?gameId="+gameId)
+		result = mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
 						.content(jsonSponsorCardRequest)
 						.contentType(MediaType.APPLICATION_JSON)
 						.accept(MediaType.APPLICATION_JSON))
@@ -276,7 +276,7 @@ class QotRtQuestTests {
 		SelectSponsorCardRequest selectSponsorCardRequest = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card,1);
 		String jsonSponsorCardRequest = mapper.writeValueAsString(selectSponsorCardRequest);
 
-		result = mockMvc.perform(post("/quest/select-foe-for-sponsored-quest-stage?gameId="+gameId)
+		result = mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
 						.content(jsonSponsorCardRequest)
 						.contentType(MediaType.APPLICATION_JSON)
 						.accept(MediaType.APPLICATION_JSON))
@@ -284,7 +284,7 @@ class QotRtQuestTests {
 
 		actualJson = result.getResponse().getContentAsString();
 		System.out.println("Error: "+ actualJson);
-		Assertions.assertEquals("Must submit Foe Card first before weapons", actualJson);
+		Assertions.assertEquals("Must submit Foe Card first", actualJson);
 	}
 
 
@@ -348,7 +348,7 @@ class QotRtQuestTests {
 		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,1);
 		String jsonSponsorCardRequest = mapper.writeValueAsString(selectSponsorCardRequest1);
 
-		result = mockMvc.perform(post("/quest/select-foe-for-sponsored-quest-stage?gameId="+gameId)
+		result = mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
 						.content(jsonSponsorCardRequest)
 						.contentType(MediaType.APPLICATION_JSON)
 						.accept(MediaType.APPLICATION_JSON))
@@ -366,13 +366,13 @@ class QotRtQuestTests {
 		SelectSponsorCardRequest selectSponsorCardRequest3 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card3,1);
 		String jsonSponsorCardRequest3 = mapper.writeValueAsString(selectSponsorCardRequest3);
 
-		result = mockMvc.perform(post("/quest/add-weapon-to-foe-quest-stage?gameId="+gameId)
+		result = mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
 						.content(jsonSponsorCardRequest2)
 						.contentType(MediaType.APPLICATION_JSON)
 						.accept(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk()).andReturn();
 
-		result = mockMvc.perform(post("/quest/add-weapon-to-foe-quest-stage?gameId="+gameId)
+		result = mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
 						.content(jsonSponsorCardRequest3)
 						.contentType(MediaType.APPLICATION_JSON)
 						.accept(MediaType.APPLICATION_JSON))
@@ -446,7 +446,7 @@ class QotRtQuestTests {
 		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,1);
 		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
 
-		result = mockMvc.perform(post("/quest/select-foe-for-sponsored-quest-stage?gameId="+gameId)
+		result = mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
 						.content(jsonSponsorCardRequest1)
 						.contentType(MediaType.APPLICATION_JSON)
 						.accept(MediaType.APPLICATION_JSON))
@@ -455,7 +455,7 @@ class QotRtQuestTests {
 		//p2 submits foe card
 		game.getMainPlayer().getCards().add(card1);
 
-		result = mockMvc.perform(post("/quest/add-weapon-to-foe-quest-stage?gameId="+gameId)
+		result = mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
 						.content(jsonSponsorCardRequest1)
 						.contentType(MediaType.APPLICATION_JSON)
 						.accept(MediaType.APPLICATION_JSON))
@@ -463,7 +463,7 @@ class QotRtQuestTests {
 
 		actualJson = result.getResponse().getContentAsString();
 		System.out.println("Error: "+ actualJson);
-		Assertions.assertEquals("Must submit weapons only to stage that already has a Foe", actualJson);
+		Assertions.assertEquals("Must supplement Foe card with Weapon Cards Only", actualJson);
 	}
 
 	//Test that submitting completed stage updates and returns what the next stage should be (2)
@@ -526,7 +526,7 @@ class QotRtQuestTests {
 		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,1);
 		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
 
-		result = mockMvc.perform(post("/quest/select-foe-for-sponsored-quest-stage?gameId="+gameId)
+		result = mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
 						.content(jsonSponsorCardRequest1)
 						.contentType(MediaType.APPLICATION_JSON)
 						.accept(MediaType.APPLICATION_JSON))
@@ -607,7 +607,7 @@ class QotRtQuestTests {
 		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,1);
 		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
 
-		result = mockMvc.perform(post("/quest/select-foe-for-sponsored-quest-stage?gameId="+gameId)
+		result = mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
 						.content(jsonSponsorCardRequest1)
 						.contentType(MediaType.APPLICATION_JSON)
 						.accept(MediaType.APPLICATION_JSON))
@@ -629,7 +629,7 @@ class QotRtQuestTests {
 		selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,2);
 		jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
 
-		result = mockMvc.perform(post("/quest/select-foe-for-sponsored-quest-stage?gameId="+gameId)
+		result = mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
 						.content(jsonSponsorCardRequest1)
 						.contentType(MediaType.APPLICATION_JSON)
 						.accept(MediaType.APPLICATION_JSON))
@@ -712,7 +712,7 @@ class QotRtQuestTests {
 		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,1);
 		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
 
-		result = mockMvc.perform(post("/quest/select-foe-for-sponsored-quest-stage?gameId="+gameId)
+		result = mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
 						.content(jsonSponsorCardRequest1)
 						.contentType(MediaType.APPLICATION_JSON)
 						.accept(MediaType.APPLICATION_JSON))
@@ -735,7 +735,7 @@ class QotRtQuestTests {
 		selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,2);
 		jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
 
-		result = mockMvc.perform(post("/quest/select-foe-for-sponsored-quest-stage?gameId="+gameId)
+		result = mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
 						.content(jsonSponsorCardRequest1)
 						.contentType(MediaType.APPLICATION_JSON)
 						.accept(MediaType.APPLICATION_JSON))
@@ -815,16 +815,16 @@ class QotRtQuestTests {
 			FoeCardFactory foeCardFactory = new FoeCardFactory();
 			Card card1 = foeCardFactory.createCard("Thieves");
 			game.getMainPlayer().getCards().add(card1);
-			SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,1);
+			SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
 			String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
 
-			result = mockMvc.perform(post("/quest/select-foe-for-sponsored-quest-stage?gameId="+gameId)
+			result = mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
 							.content(jsonSponsorCardRequest1)
 							.contentType(MediaType.APPLICATION_JSON)
 							.accept(MediaType.APPLICATION_JSON))
 					.andExpect(status().isOk()).andReturn();
 
-			SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,1);
+			SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
 			String jsonSubmitStageRequest = mapper.writeValueAsString(selectSponsorCardRequest1);
 
 			//p2 submits completed stage

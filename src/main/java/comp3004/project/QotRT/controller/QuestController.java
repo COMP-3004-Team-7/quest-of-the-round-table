@@ -44,17 +44,24 @@ public class QuestController {
         return questService.sponsorQuest(gameId, request, simpMessagingTemplate, gameService);
     }
 
-    //Select Foe for sponsor quest stages
-    @PostMapping("/select-foe-for-sponsored-quest-stage")
-    public ResponseEntity selectFoeCardForSponsorStage(@RequestParam String gameId, @RequestBody SelectSponsorCardRequest selectSponsorCardRequest) throws Exception {
-        return questService.selectFoeCardForSponsorStage(gameId, selectSponsorCardRequest, simpMessagingTemplate, gameService);
+
+    //Select Card for sponsor quest stages
+    @PostMapping("/select-card-for-sponsored-quest-stage")
+    public ResponseEntity selectCardForSponsorStage(@RequestParam String gameId, @RequestBody SelectSponsorCardRequest selectSponsorCardRequest) throws Exception {
+        return questService.selectCardForSponsorStage(gameId, selectSponsorCardRequest, simpMessagingTemplate, gameService);
     }
 
-    //Add weapons to Foe sponsor stage
-    @PostMapping("/add-weapon-to-foe-quest-stage")
-    public ResponseEntity addWeaponToSponsorStage(@RequestParam String gameId, @RequestBody SelectSponsorCardRequest selectSponsorCardRequest) throws Exception {
-        return questService.addWeaponToSponsorStage(gameId, selectSponsorCardRequest, simpMessagingTemplate, gameService);
-    }
+//    //Select Foe for sponsor quest stages
+//    @PostMapping("/select-foe-for-sponsored-quest-stage")
+//    public ResponseEntity selectFoeCardForSponsorStage(@RequestParam String gameId, @RequestBody SelectSponsorCardRequest selectSponsorCardRequest) throws Exception {
+//        return questService.selectFoeCardForSponsorStage(gameId, selectSponsorCardRequest, simpMessagingTemplate, gameService);
+//    }
+//
+//    //Add weapons to Foe sponsor stage
+//    @PostMapping("/add-weapon-to-foe-quest-stage")
+//    public ResponseEntity addWeaponToSponsorStage(@RequestParam String gameId, @RequestBody SelectSponsorCardRequest selectSponsorCardRequest) throws Exception {
+//        return questService.addWeaponToSponsorStage(gameId, selectSponsorCardRequest, simpMessagingTemplate, gameService);
+//    }
 
     //Submit completed stage for quest
     @PostMapping("/submit-completed-quest-stage")
