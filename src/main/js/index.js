@@ -4,14 +4,17 @@ import {JoinDialog} from "./components/dialogs/JoinDialog";
 import {GameBottomAppBar} from "./components/GameBottomAppBar";
 import {GameRightDrawer} from "./components/GameRightDrawer";
 import {CardDeck} from "./components/playingCards/CardDeck";
-import {Stack, StyledEngineProvider} from "@mui/material";
+import {Card, Stack, StyledEngineProvider, Typography} from "@mui/material";
 
 //Game object stuff- move out eventually
 import * as Stomp from "@stomp/stompjs";
 //const Stomp = StompJs.Stomp;
 import ajax from 'can-ajax';
 import SockJs from 'sockjs-client'
+import {PlayingCard} from "./components/playingCards/PlayingCard";
+import {StoryCard} from "./components/StoryCard";
 
+export const UserContext = React.createContext(undefined);
 
 class Game extends React.Component {
     constructor(props) {
@@ -20,11 +23,11 @@ class Game extends React.Component {
         //this.stompService = Stomp.over(function(){return new SockJs("/ws");});
 
         this.state = {
-            gameID: "",
             game: {},
-            name: "",
             hand: {},
-            discardPile: {}
+            discardPile: {},
+            storyCard: {},
+            phase: ""
         };
     }
 
@@ -46,6 +49,9 @@ class Game extends React.Component {
             });
             this.stompService.subscribe("/topic/cards-in-hand/" + game.gameId+"/"+this.state.name, (response) => {
                 this.setState({...this.state, hand: JSON.parse(response.body)});
+            });
+            this.stompService.subscribe("/topic/display-story-card/" + game.gameId, (response) => {
+                this.setState({...this.state, storyCard: JSON.parse(response.body)});
             });
             this.stompService.send("/topic/game-progress/" + this.state.gameID, {}, JSON.stringify(game));
             this.stompService.send("/game/update-principal/" + this.state.gameID, {},
@@ -74,29 +80,28 @@ class Game extends React.Component {
         this.setState({...this.state, hand:JSON.parse(data)});
     }
 
-
+    setPhase = (phase) =>{
+        this.setState({...this.state, phase: phase});
+    }
 
 
     render(){
         return(<React.Fragment>
-            <JoinDialog stompService = {this.stompService} connectToGame = {this.connectToGame}/>
-            <GameBottomAppBar gameID={this.state.gameID??""} name={this.state.name}/>
-            <GameRightDrawer gameID={this.state.gameID??""} players={this.state.game.players??""} name={this.state.name} startGame={this.startGame}/>
-            <Stack sx={{flexGrow: 1, width: "80%", anchor: "left"}}>
-                <p>
-                    Main window
-                </p>
-                <Stack>
-                    <p>
-                        Card Stack 1
-                    </p>
+            <UserContext.Provider value={{gameID: this.state.gameID, name: this.state.name, phase: this.state.phase, setPhase: this.setPhase}}>
+                <JoinDialog stompService = {this.stompService} connectToGame = {this.connectToGame}/>
+                <GameBottomAppBar/>
+                <GameRightDrawer players={this.state.game.players??""} startGame={this.startGame}/>
+                <Stack sx={{flexGrow: 1, width: "80%", anchor: "left"}}>
+                        <Card>
+                            {this.state.storyCard.name?<StoryCard card={this.state.storyCard}/>:""}
+                        </Card>
+                    <Stack>
+                        <CardDeck cards={this.state.discardPile} interactive={false}/>
 
-                    <CardDeck cards={this.state.discardPile} interactive={false}/>
-
-                    <CardDeck cards={this.state.hand} interactive={true} name={this.state.name} gameID={this.state.gameID}/>
+                        <CardDeck cards={this.state.hand} interactive={true} />
+                    </Stack>
                 </Stack>
-            </Stack>
-
+            </UserContext.Provider>
         </React.Fragment>);
     }
 }
@@ -106,5 +111,4 @@ class Game extends React.Component {
 ReactDOM.render((
         <Game/>
 ), document.getElementById('react'));
-
 

@@ -12,14 +12,10 @@ import {
     Typography
 } from "@mui/material";
 import ajax from 'can-ajax';
+import {UserContext} from '../index.js'
+
 
 class GameRightDrawer extends React.Component{
-    constructor(props) {
-        super(props);
-
-    }
-
-
     render(){
         return(
             <React.Fragment>
@@ -47,13 +43,56 @@ class GameRightDrawer extends React.Component{
                         <Card sx={{m:2, p:2}}>
                             <CardContent>
                                 <Typography variant="h6" gutterBottom component="div">Game ID</Typography>
-                                {this.props.gameID? <Typography variant="h5" gutterBottom component="div">{this.props.gameID}</Typography> : <Skeleton/>}
+                                <UserContext.Consumer>
+                                    {({gameID}) => (<Typography variant="h5" gutterBottom component="div">{gameID}</Typography>)}
+                                </UserContext.Consumer>
+                            </CardContent>
+                        </Card>
+                        <Card sx={{m:2, p:2}}>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom component="div">Quest</Typography>
+                                <UserContext.Consumer>
+                                    {({gameID, name}) => (
+                                        <React.Fragment>
+                                            <Button onClick={
+                                                () => {ajax({
+                                                url: "/quest/sponsor-quest?gameId=" + gameID,
+                                                type: 'POST',
+                                                dataType: "json",
+                                                contentType: "application/json",
+                                                data: JSON.stringify({player: {username: name}, gameId: gameID})
+                                            })}}>Sponsor Quest</Button>
+                                            <Button onClick={ () =>{ajax({
+                                                url: "/quest/decline-sponsor-quest?gameId=" + gameID,
+                                                type: 'POST',
+                                                dataType: "json",
+                                                contentType: "application/json",
+                                                data: JSON.stringify({player: {username: name}, gameId: gameID})
+                                            })}}>Decline Sponsor Quest</Button>
+                                            <br/>
+                                            <Button onClick={
+                                                () => {ajax({
+                                                    url: "/quest/join-current-quest?gameId=" + gameID,
+                                                    type: 'POST',
+                                                    dataType: "json",
+                                                    contentType: "application/json",
+                                                    data: JSON.stringify({player: {username: name}, gameId: gameID})
+                                                })}}>Join Quest</Button>
+                                            <Button onClick={ () =>{ajax({
+                                                url: "/quest/decline-to-join-current-quest?gameId=" + gameID,
+                                                type: 'POST',
+                                                dataType: "json",
+                                                contentType: "application/json",
+                                                data: JSON.stringify({player: {username: name}, gameId: gameID})
+                                            })}}>Decline Quest</Button>
+                                        </React.Fragment>
+                                    )}
+                                </UserContext.Consumer>
                             </CardContent>
                         </Card>
                     </Stack>
                 </Drawer>
             </React.Fragment>
-
         )};
 
 }

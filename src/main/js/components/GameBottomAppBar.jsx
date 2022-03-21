@@ -1,22 +1,21 @@
-import * as React from 'react';
+import React, {useContext} from 'react';
 import {AppBar, Fab, Typography} from "@mui/material";
 import Icon from '@mui/material/Icon';
 import ajax from "can-ajax";
 
+import UserContext from '../index.js'
+
 
 class GameBottomAppBar extends React.Component{
-    constructor(props) {
-        super(props);
-    }
 
     drawCard = () =>{
         ajax({
-            url: "/game/draw-card?gameId=" + this.props.gameID,
+            url: "/game/draw-card?gameId=" + this.context.gameID,
             type: 'POST',
             contentType: "application/json",
             data: JSON.stringify({
-                "player": {"username": this.props.name},
-                "gameId": this.props.gameID})
+                "player": {"username": this.context.name},
+                "gameId": this.context.gameID})
         });
     }
 

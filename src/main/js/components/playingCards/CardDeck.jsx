@@ -21,7 +21,7 @@ class CardDeck extends React.Component{
                             'marginTop': PADDING ,
                             'padding': 0};
 
-                        return(<PlayingCard card = {card} interactive = {this.props.interactive} style = {style} gameID = {this.props.gameID} name = {this.props.name}/>);
+                        return(<PlayingCard card = {card} interactive = {this.props.interactive} style = {style} />);
                     }):""}
                 </div>
             </React.Fragment>
