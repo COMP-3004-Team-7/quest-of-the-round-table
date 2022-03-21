@@ -5,6 +5,7 @@ import comp3004.project.QotRT.cards.StoryCard;
 import comp3004.project.QotRT.controller.dto.ConnectRequest;
 import comp3004.project.QotRT.controller.dto.SelectSponsorCardRequest;
 import comp3004.project.QotRT.controller.dto.SubmitStageRequest;
+import comp3004.project.QotRT.controller.stratPatternNewStory.NewStoryCardDealer;
 import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 
 @Service
 public class QuestService {
+    private final NewStoryCardDealer newStoryCardDealer = new NewStoryCardDealer();
 
     //Player has chosen to decline to sponsor the Quest
     public String declineSponsorQuest(String gameId , ConnectRequest request , SimpMessagingTemplate simpMessagingTemplate, GameService gameService){
@@ -28,22 +30,21 @@ public class QuestService {
             }
         }
         // Checking if everyone declines Quest
-        // Mod 4 for each index -> circular array
+        // Mod size for each index -> circular array
         if ((index+1) %sizeOfPlayersList == game.getPlayers().indexOf(game.getMainPlayer())){
-            game.getStoryDeck().discardCard(game.getCurrentStoryCard()); //Discarded card
-            game.setCurrentStoryCard(game.getStoryDeck().drawCard());
-
-            game.setMainPlayer(game.getPlayers().get((game.getPlayers().indexOf(game.getMainPlayer())+1)%sizeOfPlayersList));
-            System.out.println(game.getMainPlayer().getUsername());
-            //Update player statuses
-            updatePlayerStatuses(game);
-
-            simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, game.getCurrentStoryCard());
-
-            simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId
-                    ,game.getCurrentStoryCard()); // In the future we will have to check if the drawn card is  Quest
-                                                // card. This would be done in the Quest Service.
-
+//            game.getStoryDeck().discardCard(game.getCurrentStoryCard()); //Discarded card
+//            game.setCurrentStoryCard(game.getStoryDeck().drawCard());
+//
+//            game.setMainPlayer(game.getPlayers().get((game.getPlayers().indexOf(game.getMainPlayer())+1)%sizeOfPlayersList));
+//            //Update player statuses
+//            updatePlayerStatuses(game);
+//
+//            simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, game.getCurrentStoryCard());
+//
+//            simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId
+//                    ,game.getCurrentStoryCard()); // In the future we will have to check if the drawn card is  Quest
+//                                                // card. This would be done in the Quest Service.
+            newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
             if(sizeOfPlayersList==2){ //IF the player size is 2 -> then the last player becomes the main player (race condition)
                 return "Two player game";
             }
@@ -290,8 +291,6 @@ public class QuestService {
             //Send to the next person asking them if they wish to join the quest
             int indexToSendTo = (index+1)%game.getPlayers().size();
             updatePlayerStatusesClockwise(game, index);
-//            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
-//                        "/topic/cards-in-hand/"+gameId, game.getPlayers().get(indexToSendTo).getCards());
             simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
                     "/topic/quest-build-complete/"+gameId, game.getCurrentStoryCard());
         }
@@ -317,15 +316,16 @@ public class QuestService {
                 drawCardsForSponsor(game);
                 simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),
                         "/topic/cards-in-hand/"+gameId, game.getMainPlayer().getCards());
-                //Updating main player
-                int indexOfNewMain = (game.getPlayers().indexOf(game.getMainPlayer())+1)%game.getPlayers().size();
-                game.setMainPlayer(game.getPlayers().get(indexOfNewMain));
-                updatePlayerStatuses(game);
-                //Send new drawn story card to everyone and ask main player if they wish to sponsor or not (if quest)
-                StoryCard storyCard = game.getStoryDeck().drawCard();
-                game.setCurrentStoryCard(storyCard);
-                simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, storyCard);
-                simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId,storyCard);
+//                //Updating main player
+//                int indexOfNewMain = (game.getPlayers().indexOf(game.getMainPlayer())+1)%game.getPlayers().size();
+//                game.setMainPlayer(game.getPlayers().get(indexOfNewMain));
+//                updatePlayerStatuses(game);
+//                //Send new drawn story card to everyone and ask main player if they wish to sponsor or not (if quest)
+//                StoryCard storyCard = game.getStoryDeck().drawCard();
+//                game.setCurrentStoryCard(storyCard);
+//                simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, storyCard);
+//                simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId,storyCard);
+                  newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
             }
             else {
                 //1 card to each current questing player, send whether 1st stage is Foe or Test, send updated hands
@@ -481,25 +481,6 @@ public class QuestService {
         }
     }
 
-    private void updatePlayerStatuses(Game game) {
-        //Quest card -> Main player is current player
-        if(game.getCurrentStoryCard().getType().equals("Quest")){
-            for(int i = 0; i < game.getPlayers().size();i++){
-                if(game.getPlayers().get(i).equals(game.getMainPlayer())){
-                    game.getPlayers().get(i).setStatus("current");
-                }
-                else{
-                    game.getPlayers().get(i).setStatus("waiting");
-                }
-            }
-        }
-        //Event card -> set everyone to waiting (Event Service will change players to current if they need to do something)
-        else if(game.getCurrentStoryCard().getType().equals("Event")){
-            for(int i = 0; i < game.getPlayers().size();i++){
-                game.getPlayers().get(i).setStatus("waiting");
-            }
-        }
-    }
 
     private void updatePlayerStatusesClockwise(Game game, int indexOfWaiting) {
         int indexOfNextCurrent = (indexOfWaiting+1)%game.getPlayers().size();
