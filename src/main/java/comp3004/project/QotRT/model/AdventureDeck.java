@@ -2,6 +2,7 @@ package comp3004.project.QotRT.model;
 
 import comp3004.project.QotRT.cards.Card;
 import comp3004.project.QotRT.cards.FoeCardFactory;
+import comp3004.project.QotRT.cards.TestCardFactory;
 import comp3004.project.QotRT.cards.WeaponCardFactory;
 
 import java.util.ArrayList;
@@ -29,6 +30,8 @@ public class AdventureDeck {
     private static final Integer numSaxons = 5;
     private static final Integer numBoar = 4;
     private static final Integer numThieves = 8;
+    private static final Integer numTests = 2;
+
 
     public AdventureDeck(){
         deck = new ArrayList<>();
@@ -93,6 +96,16 @@ public class AdventureDeck {
         for(int i = 0; i < numThieves; i++){
             deck.add(foeFactory.createCard("Thieves"));
         }
+
+        TestCardFactory testcardfactory = new TestCardFactory();
+        //creating test cards
+        for(int i = 0; i < numTests; i++){
+            deck.add(testcardfactory.createCard("Test of Valor"));
+            deck.add(testcardfactory.createCard("Test of Temptation"));
+            deck.add(testcardfactory.createCard("Test of Morghan Le Fey"));
+            deck.add(testcardfactory.createCard("Test of Questing Beast"));
+        }
+
         return this;
     }
 
