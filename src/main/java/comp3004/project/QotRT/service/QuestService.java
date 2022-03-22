@@ -5,7 +5,6 @@ import comp3004.project.QotRT.cards.StoryCard;
 import comp3004.project.QotRT.controller.dto.ConnectRequest;
 import comp3004.project.QotRT.controller.dto.SelectSponsorCardRequest;
 import comp3004.project.QotRT.controller.dto.SubmitStageRequest;
-import comp3004.project.QotRT.controller.stratPatternNewStory.NewStoryCardDealer;
 import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +15,6 @@ import java.util.ArrayList;
 
 @Service
 public class QuestService {
-    private final NewStoryCardDealer newStoryCardDealer = new NewStoryCardDealer();
 
     //Player has chosen to decline to sponsor the Quest
     public String declineSponsorQuest(String gameId , ConnectRequest request , SimpMessagingTemplate simpMessagingTemplate, GameService gameService){
@@ -30,21 +28,22 @@ public class QuestService {
             }
         }
         // Checking if everyone declines Quest
-        // Mod size for each index -> circular array
+        // Mod 4 for each index -> circular array
         if ((index+1) %sizeOfPlayersList == game.getPlayers().indexOf(game.getMainPlayer())){
-//            game.getStoryDeck().discardCard(game.getCurrentStoryCard()); //Discarded card
-//            game.setCurrentStoryCard(game.getStoryDeck().drawCard());
-//
-//            game.setMainPlayer(game.getPlayers().get((game.getPlayers().indexOf(game.getMainPlayer())+1)%sizeOfPlayersList));
-//            //Update player statuses
-//            updatePlayerStatuses(game);
-//
-//            simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, game.getCurrentStoryCard());
-//
-//            simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId
-//                    ,game.getCurrentStoryCard()); // In the future we will have to check if the drawn card is  Quest
-//                                                // card. This would be done in the Quest Service.
-            newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
+            game.getStoryDeck().discardCard(game.getCurrentStoryCard()); //Discarded card
+            game.setCurrentStoryCard(game.getStoryDeck().drawCard());
+
+            game.setMainPlayer(game.getPlayers().get((game.getPlayers().indexOf(game.getMainPlayer())+1)%sizeOfPlayersList));
+            System.out.println(game.getMainPlayer().getUsername());
+            //Update player statuses
+            updatePlayerStatuses(game);
+
+            simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, game.getCurrentStoryCard());
+
+            simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId
+                    ,game.getCurrentStoryCard()); // In the future we will have to check if the drawn card is  Quest
+                                                // card. This would be done in the Quest Service.
+
             if(sizeOfPlayersList==2){ //IF the player size is 2 -> then the last player becomes the main player (race condition)
                 return "Two player game";
             }
@@ -70,31 +69,15 @@ public class QuestService {
         return game.getCurrentStoryCard();
     }
 
-    //Player has selected a Card for a stage to build
-    public ResponseEntity selectCardForSponsorStage(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
-        //Error checking -> if this is first card submitted for this stage number, then check if it is a foe
-        //Otherwise we check if it is a weapon card and check if there are any duplicate weapons
-        Game game = gameService.getGame(gameId);
-        if(game.getStage(request.getStage()).isEmpty()){
-            if(!request.getCard().getType().equals("Foe")){
-                return ResponseEntity.badRequest().body("Must submit Foe Card first");
-            }
-        }
-        else{
-            if(!request.getCard().getType().equals("Weapon")){
-                return ResponseEntity.badRequest().body("Must supplement Foe card with Weapon Cards Only");
-            }
-            else{
-                //Check for duplicate weapons
-                for(int i = 0; i < game.getStage(request.getStage()).size(); i++){
-                    if(game.getStage(request.getStage()).get(i).getName().equals(request.getCard().getName())){
-                        return ResponseEntity.badRequest().body("Cannot submit duplicate weapon in same stage");
-                    }
-                }
-            }
+    //Player has selected a Card for a stage
+    public ResponseEntity selectFoeCardForSponsorStage(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+        //Error checking (is card submitted an actual foe card?)
+        if(!request.getCard().getType().equals("Foe")){
+            return ResponseEntity.badRequest().body("Must submit Foe Card first before weapons");
         }
 
-        //If we get here then no errors have occurred, and we can add card to current stage
+        //Add card to the current stage
+        Game game = gameService.getGame(gameId);
         game.addCardToStage(request.getCard(), request.getStage());
 
         //Update players hand
@@ -115,78 +98,46 @@ public class QuestService {
             }
         }
 
-        return ResponseEntity.ok().body("Successfully added a card to stage " + request.getStage());
+        return ResponseEntity.ok().body("Successfully selects a foe card for stage");
     }
 
-//    //Player has selected a Card for a stage
-//    public ResponseEntity selectFoeCardForSponsorStage(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
-//        //Error checking (is card submitted an actual foe card?)
-//        if(!request.getCard().getType().equals("Foe")){
-//            return ResponseEntity.badRequest().body("Must submit Foe Card first before weapons");
-//        }
-//
-//        //Add card to the current stage
-//        Game game = gameService.getGame(gameId);
-//        game.addCardToStage(request.getCard(), request.getStage());
-//
-//        //Update players hand
-//        for (int i=0; i<game.getPlayers().size(); i++){
-//            if(game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
-//                Player p = game.getPlayers().get(i);
-//                for(int k = 0; k < p.getCards().size(); k++){
-//                    if(p.getCards().get(k).getName().equals(request.getCard().getName())){
-//                        p.getCards().remove(k);
-//                        break;
-//                    }
-//                }
-//                //Send back updated player hand
-//                simpMessagingTemplate.convertAndSendToUser(p.getName(),"/topic/cards-in-hand/"+gameId
-//                        ,p.getCards());
-//
-//                break;
-//            }
-//        }
-//
-//        return ResponseEntity.ok().body("Successfully selects a foe card for stage");
-//    }
-//
-//    public ResponseEntity addWeaponToSponsorStage(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
-//        Game game = gameService.getGame(gameId);
-//        //Error checking (is card submitted an actual weapon card?)
-//        if(!request.getCard().getType().equals("Weapon")){
-//            return ResponseEntity.badRequest().body("Must submit weapons only to stage that already has a Foe");
-//        }
-//
-//        //Has weapon been played already?
-//        for(int i = 0; i < game.getStage(request.getStage()).size(); i++){
-//            if(game.getStage(request.getStage()).get(i).getName().equals(request.getCard().getName())){
-//                return ResponseEntity.badRequest().body("Cannot submit duplicate weapon in same stage");
-//            }
-//        }
-//
-//        //Add card to current stage
-//        game.addCardToStage(request.getCard(), request.getStage());
-//
-//        //Update players hand
-//        for (int i=0; i<game.getPlayers().size(); i++){
-//            if(game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
-//                Player p = game.getPlayers().get(i);
-//                for(int k = 0; k < p.getCards().size(); k++){
-//                    if(p.getCards().get(k).getName().equals(request.getCard().getName())){
-//                        p.getCards().remove(k);
-//                        break;
-//                    }
-//                }
-//                //Send back updated player hand
-//                simpMessagingTemplate.convertAndSendToUser(p.getName(),"/topic/cards-in-hand/"+gameId
-//                        ,p.getCards());
-//
-//                break;
-//            }
-//        }
-//
-//        return ResponseEntity.ok().body("Successfully added a weapon card to stage! ");
-//    }
+    public ResponseEntity addWeaponToSponsorStage(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+        Game game = gameService.getGame(gameId);
+        //Error checking (is card submitted an actual weapon card?)
+        if(!request.getCard().getType().equals("Weapon")){
+            return ResponseEntity.badRequest().body("Must submit weapons only to stage that already has a Foe");
+        }
+
+        //Has weapon been played already?
+        for(int i = 0; i < game.getStage(request.getStage()).size(); i++){
+            if(game.getStage(request.getStage()).get(i).getName().equals(request.getCard().getName())){
+                return ResponseEntity.badRequest().body("Cannot submit duplicate weapon in same stage");
+            }
+        }
+
+        //Add card to current stage
+        game.addCardToStage(request.getCard(), request.getStage());
+
+        //Update players hand
+        for (int i=0; i<game.getPlayers().size(); i++){
+            if(game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
+                Player p = game.getPlayers().get(i);
+                for(int k = 0; k < p.getCards().size(); k++){
+                    if(p.getCards().get(k).getName().equals(request.getCard().getName())){
+                        p.getCards().remove(k);
+                        break;
+                    }
+                }
+                //Send back updated player hand
+                simpMessagingTemplate.convertAndSendToUser(p.getName(),"/topic/cards-in-hand/"+gameId
+                        ,p.getCards());
+
+                break;
+            }
+        }
+
+        return ResponseEntity.ok().body("Successfully added a weapon card to stage! ");
+    }
 
     public ResponseEntity submitSponsorStage(String gameId, SubmitStageRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
         //Check if current stage is greater than all previous stages battlepoints
@@ -245,7 +196,7 @@ public class QuestService {
                 simpMessagingTemplate.convertAndSend("/topic/quest-build-complete/"+gameId
                         , game.getCurrentStoryCard());
                 //Update player statuses and send to next user in line to see if they want to join or not
-                int indexToSendTo = (game.getPlayers().indexOf(game.getMainPlayer())+1)%game.getPlayers().size();
+                int indexToSendTo = game.getPlayers().indexOf(game.getMainPlayer())+1%game.getPlayers().size();
                 updatePlayerStatusesClockwise(game, game.getPlayers().indexOf(game.getMainPlayer()));
                 simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
                         "/topic/quest-build-complete/"+gameId, game.getCurrentStoryCard());
@@ -289,8 +240,10 @@ public class QuestService {
         }
         else{
             //Send to the next person asking them if they wish to join the quest
-            int indexToSendTo = (index+1)%game.getPlayers().size();
+            int indexToSendTo = index+1%game.getPlayers().size();
             updatePlayerStatusesClockwise(game, index);
+//            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
+//                        "/topic/cards-in-hand/"+gameId, game.getPlayers().get(indexToSendTo).getCards());
             simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
                     "/topic/quest-build-complete/"+gameId, game.getCurrentStoryCard());
         }
@@ -316,16 +269,15 @@ public class QuestService {
                 drawCardsForSponsor(game);
                 simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),
                         "/topic/cards-in-hand/"+gameId, game.getMainPlayer().getCards());
-//                //Updating main player
-//                int indexOfNewMain = (game.getPlayers().indexOf(game.getMainPlayer())+1)%game.getPlayers().size();
-//                game.setMainPlayer(game.getPlayers().get(indexOfNewMain));
-//                updatePlayerStatuses(game);
-//                //Send new drawn story card to everyone and ask main player if they wish to sponsor or not (if quest)
-//                StoryCard storyCard = game.getStoryDeck().drawCard();
-//                game.setCurrentStoryCard(storyCard);
-//                simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, storyCard);
-//                simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId,storyCard);
-                  newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
+                //Updating main player
+                int indexOfNewMain = game.getPlayers().indexOf(game.getMainPlayer())+1%game.getPlayers().size();
+                game.setMainPlayer(game.getPlayers().get(indexOfNewMain));
+                updatePlayerStatuses(game);
+                //Send new drawn story card to everyone and ask main player if they wish to sponsor or not (if quest)
+                StoryCard storyCard = game.getStoryDeck().drawCard();
+                game.setCurrentStoryCard(storyCard);
+                simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, storyCard);
+                simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId,storyCard);
             }
             else {
                 //1 card to each current questing player, send whether 1st stage is Foe or Test, send updated hands
@@ -334,7 +286,7 @@ public class QuestService {
         }
         else{
             //Send to the next person asking them if they wish to join the quest
-            int indexToSendTo = (index+1)%game.getPlayers().size();
+            int indexToSendTo = index+1%game.getPlayers().size();
             updatePlayerStatusesClockwise(game, index);
 //            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
 //                    "/topic/cards-in-hand/"+gameId, game.getPlayers().get(indexToSendTo).getCards());
@@ -482,9 +434,28 @@ public class QuestService {
         }
     }
 
+    private void updatePlayerStatuses(Game game) {
+        //Quest card -> Main player is current player
+        if(game.getCurrentStoryCard().getType().equals("Quest")){
+            for(int i = 0; i < game.getPlayers().size();i++){
+                if(game.getPlayers().get(i).equals(game.getMainPlayer())){
+                    game.getPlayers().get(i).setStatus("current");
+                }
+                else{
+                    game.getPlayers().get(i).setStatus("waiting");
+                }
+            }
+        }
+        //Event card -> set everyone to waiting (Event Service will change players to current if they need to do something)
+        else if(game.getCurrentStoryCard().getType().equals("Event")){
+            for(int i = 0; i < game.getPlayers().size();i++){
+                game.getPlayers().get(i).setStatus("waiting");
+            }
+        }
+    }
 
     private void updatePlayerStatusesClockwise(Game game, int indexOfWaiting) {
-        int indexOfNextCurrent = (indexOfWaiting+1)%game.getPlayers().size();
+        int indexOfNextCurrent = indexOfWaiting+1%game.getPlayers().size();
         game.getPlayers().get(indexOfWaiting).setStatus("waiting");
         game.getPlayers().get(indexOfNextCurrent).setStatus("current");
     }
