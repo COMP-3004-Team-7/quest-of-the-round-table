@@ -14,6 +14,7 @@ public class Game {
     private AdventureDeck adventureDeck;
     private StoryDeck storyDeck;
     private ArrayList<Player> questingPlayers;
+    private ArrayList<Player> tournamentPlayers;
     private Player mainPlayer;
     private StoryCard currentStoryCard;
     private Card[][] sponsoredQuestCards;
@@ -28,6 +29,7 @@ public class Game {
         adventureDeck = new AdventureDeck();
         players = new ArrayList<>();
         questingPlayers = new ArrayList<>();
+        tournamentPlayers = new ArrayList<>();
         storyDeck = new StoryDeck();
         firstStage = new ArrayList<>();
         secondStage = new ArrayList<>();
@@ -37,6 +39,14 @@ public class Game {
     }
 
     //GETTER AND SETTERS
+    public ArrayList<Player> getTournamentPlayers() {
+        return tournamentPlayers;
+    }
+
+    public void setTournamentPlayers(ArrayList<Player> tournamentPlayers) {
+        this.tournamentPlayers = tournamentPlayers;
+    }
+
     public ArrayList<Player> getPlayers() {
         return players;
     }
