@@ -64,6 +64,18 @@ public class Deck {
                 cardList.add(new Thieves());
             }
         }
+        //adding test cards to the adventure deck.
+        for (int i = 0; i<8 ; i++) { //ADDING WEAPON CARDS
+            if (i < 2) {
+                cardList.add(new TestofValor());
+            } else if (i < 4) {
+                cardList.add(new TestofTemptation());
+            } else if (i < 6) {
+                cardList.add(new TestofMorghanLeFey());
+            }else {
+                cardList.add(new TestQuestingBeast());
+            }
+        }
         return cardList;
     }
 }

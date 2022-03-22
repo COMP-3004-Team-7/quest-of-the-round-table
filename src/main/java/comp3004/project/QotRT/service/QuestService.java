@@ -70,7 +70,6 @@ public class QuestService {
     }
 
     //Player has selected a Card for a stage
-    //CHECK IF THERE ARE ANY DUPLICATE WEAPON CARDS!
     public ResponseEntity selectFoeCardForSponsorStage(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
         //Error checking (is card submitted an actual foe card?)
         if(!request.getCard().getType().equals("Foe")){
