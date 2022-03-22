@@ -4,6 +4,8 @@ import comp3004.project.QotRT.cards.StoryCard;
 import comp3004.project.QotRT.model.Game;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import java.util.ArrayList;
+
 public class QuestCardStrategy implements NewStoryCardStrategy{
 
     @Override
@@ -20,6 +22,9 @@ public class QuestCardStrategy implements NewStoryCardStrategy{
                 game.getPlayers().get(i).setStatus("waiting");
             }
         }
+        //Set questing players to empty before starting
+        game.setQuestingPlayers(new ArrayList<>());
+
         simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+game.getGameId(), game.getCurrentStoryCard());
         simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+game.getGameId(),game.getCurrentStoryCard());
     }

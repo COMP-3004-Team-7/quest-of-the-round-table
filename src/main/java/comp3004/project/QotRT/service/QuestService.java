@@ -387,6 +387,7 @@ public class QuestService {
                     game.getQuestingPlayers().get(i).setShields(request.getStage()+game.getBonusShield());
                     game.setBonusShield(0);
                     game.getQuestingPlayers().get(i).setRank();
+                    removeWeaponCards(game, game.getQuestingPlayers().get(i));
                 }
                 drawCardsForSponsor(game);
             }

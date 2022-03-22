@@ -17,7 +17,6 @@ public class Game {
     private ArrayList<Player> tournamentPlayers;
     private Player mainPlayer;
     private StoryCard currentStoryCard;
-    private Card[][] sponsoredQuestCards;
     private ArrayList<Card> firstStage;
     private ArrayList<Card> secondStage;
     private ArrayList<Card> thirdStage;
@@ -105,11 +104,6 @@ public class Game {
 
     public void setCurrentStoryCard(StoryCard currentStoryCard) {
         this.currentStoryCard = currentStoryCard;
-        sponsoredQuestCards = new Card[currentStoryCard.getStages()][1];
-    }
-
-    public Card[][] getSponsoredQuestCards() {
-        return sponsoredQuestCards;
     }
 
     public ArrayList<Player> getQuestingPlayers() { return questingPlayers; }
@@ -124,11 +118,6 @@ public class Game {
     //METHODS
     public void addPlayer(Player p){
         players.add(p);
-    }
-
-    public void addToSponsoredQuestCards(Card c, Integer stage) {
-        int length = sponsoredQuestCards[stage].length;
-        sponsoredQuestCards[stage][length] = c;
     }
 
     public ArrayList<Card> getStage(Integer stage){
