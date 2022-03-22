@@ -24,8 +24,12 @@ public class Game {
     private ArrayList<Card> fourthStage;
     private ArrayList<Card> fifthStage;
     private int bonusShield = 0;
+    private int numOfTournamentPlayers;
+    private Boolean inTieBreakerTournament;
 
     public Game() {
+        inTieBreakerTournament = false;
+        numOfTournamentPlayers = 0;
         adventureDeck = new AdventureDeck();
         players = new ArrayList<>();
         questingPlayers = new ArrayList<>();
@@ -39,6 +43,22 @@ public class Game {
     }
 
     //GETTER AND SETTERS
+    public Boolean getInTieBreakerTournament() {
+        return inTieBreakerTournament;
+    }
+
+    public void setInTieBreakerTournament(Boolean inTieBreakerTournament) {
+        this.inTieBreakerTournament = inTieBreakerTournament;
+    }
+
+    public int getNumOfTournamentPlayers() {
+        return numOfTournamentPlayers;
+    }
+
+    public void setNumOfTournamentPlayers(int numOfTournamentPlayers) {
+        this.numOfTournamentPlayers = numOfTournamentPlayers;
+    }
+
     public ArrayList<Player> getTournamentPlayers() {
         return tournamentPlayers;
     }

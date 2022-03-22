@@ -76,7 +76,7 @@ public class Player implements Principal {
     }
 
     public void setShields(Integer shields) {
-        this.shields = shields;
+        this.shields = shields; this.setRank();
     }
 
     public Integer getBattlePoints() {

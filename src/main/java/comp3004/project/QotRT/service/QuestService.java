@@ -421,6 +421,7 @@ public class QuestService {
                 if(weaponCardsPlayed<foeStagePoints){
                     //THIS PLAYER IS ELIMINATED FROM THE QUEST -> REMOVED FROM THE QUESTINGPLAYERSLIST
                     //SEND SIMPMESSAGING TEMPLATE TO THE USER THAT HAVE BEEN REMOVED FROM THE LIST
+                    removeWeaponCards(game, game.getQuestingPlayers().get(i));
                     game.getQuestingPlayers().remove(i);
                     i--;
                 }
@@ -486,5 +487,12 @@ public class QuestService {
         int indexOfNextCurrent = (indexOfWaiting+1)%game.getPlayers().size();
         game.getPlayers().get(indexOfWaiting).setStatus("waiting");
         game.getPlayers().get(indexOfNextCurrent).setStatus("current");
+    }
+
+    private void removeWeaponCards(Game game, Player p){
+        for(Card c: p.getWeaponCardsPlayed()){
+            game.getAdventureDeck().discardCard(c);
+        }
+        p.setWeaponCardsPlayed(new ArrayList<>());
     }
 }

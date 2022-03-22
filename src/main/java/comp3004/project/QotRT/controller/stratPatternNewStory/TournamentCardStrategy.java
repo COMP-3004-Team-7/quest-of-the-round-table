@@ -4,6 +4,8 @@ import comp3004.project.QotRT.cards.StoryCard;
 import comp3004.project.QotRT.model.Game;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import java.util.ArrayList;
+
 public class TournamentCardStrategy implements NewStoryCardStrategy{
     @Override
     public void dealWithNewStoryCard(Game game, SimpMessagingTemplate simpMessagingTemplate) {
@@ -19,6 +21,10 @@ public class TournamentCardStrategy implements NewStoryCardStrategy{
                 game.getPlayers().get(i).setStatus("waiting");
             }
         }
+        //Set num players to 0, set tiebreaker to false
+        game.setNumOfTournamentPlayers(0);
+        game.setInTieBreakerTournament(false);
+        game.setTournamentPlayers(new ArrayList<>());
         simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+game.getGameId(), game.getCurrentStoryCard());
         simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/join-tournament/"+game.getGameId(),game.getCurrentStoryCard());
     }

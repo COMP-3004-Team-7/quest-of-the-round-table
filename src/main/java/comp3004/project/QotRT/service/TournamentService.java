@@ -11,6 +11,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+
+
 @Service
 public class TournamentService {
     private final NewStoryCardDealer newStoryCardDealer = new NewStoryCardDealer();
@@ -78,8 +83,8 @@ public class TournamentService {
             if(game.getTournamentPlayers().size() == 1){
                 Player p = game.getTournamentPlayers().get(0);
                 p.setShields(p.getShields() + 1 + game.getCurrentStoryCard().getStages());
-                int indexOfNewMain = (game.getPlayers().indexOf(game.getMainPlayer())+1) % game.getPlayers().size();
-                game.setMainPlayer((game.getPlayers().get(indexOfNewMain)));
+//                int indexOfNewMain = (game.getPlayers().indexOf(game.getMainPlayer())+1) % game.getPlayers().size();
+//                game.setMainPlayer((game.getPlayers().get(indexOfNewMain)));
                 newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
             }
             else{
@@ -88,6 +93,7 @@ public class TournamentService {
                     Card c = game.getAdventureDeck().drawCard();
                     game.getTournamentPlayers().get(i).getCards().add(c);
                     game.getTournamentPlayers().get(i).setStatus("current");
+                    game.setNumOfTournamentPlayers(game.getTournamentPlayers().size()); //set original tournament size
                     simpMessagingTemplate.convertAndSendToUser(game.getTournamentPlayers().get(i).getName(),
                             "/topic/play-in-tournament/"+gameId ,game.getCurrentStoryCard());
                 }
@@ -131,6 +137,76 @@ public class TournamentService {
 
     public ResponseEntity completeCardsPlayedInTournament(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
         //TODO Finish complete cards played in tournament method
+        Game game = gameService.getGame(gameId);
+        //Get player who submitted their cards, set status to "waiting", and check if anyone else needs to submit their cards
+        int numWaitingPlayers = 0;
+        for (int i=0; i<game.getTournamentPlayers().size(); i++){
+            if(game.getTournamentPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
+                game.getTournamentPlayers().get(i).setStatus("waiting");
+                break;
+            }
+            if(game.getTournamentPlayers().get(i).getStatus().equals("waiting")){
+                numWaitingPlayers++;
+            }
+        }
+
+        //Check if this is the last player to submit their cards
+        if(numWaitingPlayers == game.getTournamentPlayers().size()){
+            //Check for winner
+            HashMap<Player, Integer> playersPointsMap = new HashMap<>();
+            for(int i = 0; i < game.getTournamentPlayers().size(); i++){
+                int BattlePoints = 0;
+                Player p = game.getTournamentPlayers().get(i);
+                for(int j = 0; j < p.getWeaponCardsPlayed().size(); j++){
+                    BattlePoints = BattlePoints + p.getWeaponCardsPlayed().get(j).getMAXbattlepoints();
+                }
+                BattlePoints = BattlePoints + p.getBattlePoints();
+//                playersPointsMap.put(p,BattlePoints);
+                playersPointsMap.put(p,BattlePoints);
+            }
+            int maxValue = Collections.max(playersPointsMap.values());
+            ArrayList<Player> winners = new ArrayList<>();
+            for(int i = 0; i < game.getTournamentPlayers().size(); i++){
+                if(playersPointsMap.get(game.getTournamentPlayers().get(i)) == maxValue){
+                    winners.add(game.getTournamentPlayers().get(i));
+                }
+                else{
+                    removeWeaponCards(game,game.getTournamentPlayers().get(i));
+                }
+            }
+
+            //Check for 1 winner
+            if(winners.size() == 1){
+                //give shields, draw new story card
+                winners.get(0).setShields(game.getCurrentStoryCard().getStages() + game.getNumOfTournamentPlayers());
+                removeWeaponCards(game,winners.get(0));
+                newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
+            }
+            //Check if multiple winners and if they need a tie-breaker
+            else if(!game.getInTieBreakerTournament()){
+                game.setTournamentPlayers(winners);
+                for(Player p : winners){
+                    removeWeaponCards(game,p);
+                    Card c = game.getAdventureDeck().drawCard();
+                    p.getCards().add(c);
+                    simpMessagingTemplate.convertAndSendToUser(p.getName(),"/topic/cards-in-hand/"+gameId
+                            ,p.getCards());
+                    p.setStatus("current");
+                    simpMessagingTemplate.convertAndSendToUser(p.getName(),
+                            "/topic/play-in-tournament/"+gameId ,game.getCurrentStoryCard());
+                }
+                game.setInTieBreakerTournament(true);
+            }
+            //Otherwise, multiple winners even after a tie-breaker
+            else{
+                for(Player p : winners){
+                    removeWeaponCards(game,p);
+                    p.setShields(game.getCurrentStoryCard().getStages() + game.getNumOfTournamentPlayers());
+                }
+                newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
+            }
+        }
+
         return ResponseEntity.ok().body("You have successfully completed all cards you wish to play in the tournament");
     }
 
@@ -142,6 +218,12 @@ public class TournamentService {
         game.getPlayers().get(indexOfNextCurrent).setStatus("current");
     }
 
+    private void removeWeaponCards(Game game, Player p){
+        for(Card c: p.getWeaponCardsPlayed()){
+            game.getAdventureDeck().discardCard(c);
+        }
+        p.setWeaponCardsPlayed(new ArrayList<>());
+    }
 
 
 }
