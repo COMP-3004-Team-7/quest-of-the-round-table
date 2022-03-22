@@ -19,6 +19,9 @@ public class StoryDeck {
     private static final Integer numSlayDragon = 1;
     private static final Integer numBoarHunt = 2;
     private static final Integer numSaxonRaiders = 2;
+    private static final Integer tournamentcount = 1;
+    private static final Integer eventsmaxcount = 2;
+    private static final Integer eventsmincount = 1;
 
     public StoryDeck(){
         deck = new ArrayList<>();
@@ -29,6 +32,8 @@ public class StoryDeck {
     public StoryDeck buildStoryDeck(){
         //Weapon Cards
         QuestCardFactory questCardFactory = new QuestCardFactory();
+        TournamentcardFactory tournamentfactory = new TournamentcardFactory();
+        EventCardFactory eventfactory = new EventCardFactory();
         for(int i = 0; i < numHolyGrail; i++){
             deck.add(questCardFactory.createCard("Search for the Holy Grail"));
         }
@@ -59,6 +64,30 @@ public class StoryDeck {
         for(int i = 0; i < numSaxonRaiders; i++){
             deck.add(questCardFactory.createCard("Repel the Saxon Raiders"));
         }
+        //adding tournaments to story deck
+        for(int i = 0; i < tournamentcount; i++){
+            deck.add(tournamentfactory.createCard("At Camelot"));
+            deck.add(tournamentfactory.createCard("At Orkney"));
+            deck.add(tournamentfactory.createCard("At Tintagel"));
+            deck.add(tournamentfactory.createCard("At York"));
+        }
+        //adding events to story deck.
+        for(int i = 0; i < eventsmaxcount; i++){
+           deck.add(eventfactory.createCard("Queen's Favor"));
+           deck.add(eventfactory.createCard("King's Recognition"));
+           deck.add(eventfactory.createCard("Court Called to Camelot"));
+
+        }
+        for(int i = 0; i < eventsmincount; i++){
+            deck.add(eventfactory.createCard("Chivalrous Deed"));
+            deck.add(eventfactory.createCard("Pox"));
+            deck.add(eventfactory.createCard("Plague"));
+            deck.add(eventfactory.createCard("King's Call to Arms"));
+            deck.add(eventfactory.createCard("Prosperity Throughout the Realm"));
+
+        }
+
+
         return this;
     }
 
