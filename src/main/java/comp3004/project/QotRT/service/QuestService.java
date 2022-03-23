@@ -294,25 +294,10 @@ public class QuestService {
             //Also check if this is the last stage of quest --> check for winners of quest
 
             //TOTAL FOE BATTLE POINTS
-            int foeStagePoints = 0;
-            for (int i=0 ; i<game.getStage(request.getStage()).size();i++){
-                //CHECK TO SEE IF THE MAX BATTLE POINT NEEDS TO BE USED OR MIN
-                //Checking if we should use Min vs Max battlepoints
-                if(game.getCurrentStoryCard().getFoevalue().equals("All")){
-                    foeStagePoints += game.getStage(request.getStage()).get(i).getMAXbattlepoints();
-                }
-                else if(game.getCurrentStoryCard().getFoevalue().equals("All Saxons")
-                        && game.getStage(request.getStage()).get(i).getName().contains("Saxon")){
-                    foeStagePoints += game.getStage(request.getStage()).get(i).getMAXbattlepoints();
-                }
-                else if(game.getCurrentStoryCard().getFoevalue().equals(game.getStage(request.getStage()).get(i).getName())){
-                    foeStagePoints += game.getStage(request.getStage()).get(i).getMAXbattlepoints();
-                }
-                else{
-                    foeStagePoints += game.getStage(request.getStage()).get(i).getMINbattlepoints();
-                }
-            }
+            int foeStagePoints = getBattlePointsOfStage(game, request.getStage());
+
             //COMPARING THE WEAPONS CARD PLAYED TO THE TOTAL FOE BATTLE POINTS OF THE CURRENT STAGE
+            //TODO also have to check rank of player with weapon cards played
             int weaponCardsPlayed = 0;
             for(int i=0; i<game.getQuestingPlayers().size(); i++){
                 for(int j=0 ; j<game.getQuestingPlayers().get(i).getWeaponCardsPlayed().size(); j++) {
