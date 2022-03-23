@@ -5,6 +5,7 @@ import comp3004.project.QotRT.cards.StoryCard;
 import comp3004.project.QotRT.controller.dto.ConnectRequest;
 import comp3004.project.QotRT.controller.dto.SelectSponsorCardRequest;
 import comp3004.project.QotRT.controller.dto.SubmitStageRequest;
+import comp3004.project.QotRT.controller.stratPatternNewStory.NewStoryCardDealer;
 import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 
 @Service
 public class QuestService {
+    private final NewStoryCardDealer newStoryCardDealer = new NewStoryCardDealer();
 
     //Player has chosen to decline to sponsor the Quest
     public String declineSponsorQuest(String gameId , ConnectRequest request , SimpMessagingTemplate simpMessagingTemplate, GameService gameService){
@@ -30,19 +32,7 @@ public class QuestService {
         // Checking if everyone declines Quest
         // Mod 4 for each index -> circular array
         if ((index+1) %sizeOfPlayersList == game.getPlayers().indexOf(game.getMainPlayer())){
-            game.getStoryDeck().discardCard(game.getCurrentStoryCard()); //Discarded card
-            game.setCurrentStoryCard(game.getStoryDeck().drawCard());
-
-            game.setMainPlayer(game.getPlayers().get((game.getPlayers().indexOf(game.getMainPlayer())+1)%sizeOfPlayersList));
-            System.out.println(game.getMainPlayer().getUsername());
-            //Update player statuses
-            updatePlayerStatuses(game);
-
-            simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, game.getCurrentStoryCard());
-
-            simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId
-                    ,game.getCurrentStoryCard()); // In the future we will have to check if the drawn card is  Quest
-                                                // card. This would be done in the Quest Service.
+            newStoryCardDealer.dealWithNewStoryCard(game, simpMessagingTemplate);
 
             if(sizeOfPlayersList==2){ //IF the player size is 2 -> then the last player becomes the main player (race condition)
                 return "Two player game";
@@ -250,17 +240,15 @@ public class QuestService {
             //Checking if nobody joined quest -> main player draws card, update main player, draw new story card
             if(game.getQuestingPlayers().size()==0){
                 drawCardsForSponsor(game);
+                //Put all cards in quest in discard pile
+                for(int i = 1; i < 6; i++){
+                    for(int j = 0; j < game.getStage(i).size(); j++){
+                        game.getAdventureDeck().discardCard(game.getStage(i).get(j));
+                    }
+                }
                 simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),
                         "/topic/cards-in-hand/"+gameId, game.getMainPlayer().getCards());
-                //Updating main player
-                int indexOfNewMain = game.getPlayers().indexOf(game.getMainPlayer())+1%game.getPlayers().size();
-                game.setMainPlayer(game.getPlayers().get(indexOfNewMain));
-                updatePlayerStatuses(game);
-                //Send new drawn story card to everyone and ask main player if they wish to sponsor or not (if quest)
-                StoryCard storyCard = game.getStoryDeck().drawCard();
-                game.setCurrentStoryCard(storyCard);
-                simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+gameId, storyCard);
-                simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+gameId,storyCard);
+                newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
             }
             else {
                 //1 card to each current questing player, send whether 1st stage is Foe or Test, send updated hands
