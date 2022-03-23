@@ -170,4 +170,12 @@ public class Game {
     public void addQuestingPlayer(Player p){
         questingPlayers.add(p);
     }
+
+    public void resetStages(){
+        firstStage = new ArrayList<>();
+        secondStage = new ArrayList<>();
+        thirdStage = new ArrayList<>();
+        fourthStage = new ArrayList<>();
+        fifthStage = new ArrayList<>();
+    }
 }

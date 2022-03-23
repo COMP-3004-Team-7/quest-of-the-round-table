@@ -15,6 +15,7 @@ import java.util.HashMap;
 
 public class EventService {
 
+
     public void doEvent(Game game, SimpMessagingTemplate simpMessagingTemplate){
         if(game.getCurrentStoryCard() instanceof ChivalrousDeed) {
             String lowRank = "";
