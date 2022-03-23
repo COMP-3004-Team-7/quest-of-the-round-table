@@ -117,34 +117,15 @@ public class QuestService {
         Boolean isBigger = true;
         Game game = gameService.getGame(gameId);
         int numStages = game.getCurrentStoryCard().getStages();
-        int totalBattlePointsInSubmittedStage = 0;
-        for(int i = 0; i < game.getStage(request.getStage()).size(); i++){
-            //Checking if we should use Min vs Max battlepoints
-            if(game.getCurrentStoryCard().getFoevalue().equals("All")){
-                totalBattlePointsInSubmittedStage += game.getStage(request.getStage()).get(i).getMAXbattlepoints();
-            }
-            else if(game.getCurrentStoryCard().getFoevalue().equals("All Saxons")
-                    && game.getStage(request.getStage()).get(i).getName().contains("Saxon")){
-                totalBattlePointsInSubmittedStage += game.getStage(request.getStage()).get(i).getMAXbattlepoints();
-            }
-            else if(game.getCurrentStoryCard().getFoevalue().equals(game.getStage(request.getStage()).get(i).getName())){
-                totalBattlePointsInSubmittedStage += game.getStage(request.getStage()).get(i).getMAXbattlepoints();
-            }
-            else{
-                totalBattlePointsInSubmittedStage += game.getStage(request.getStage()).get(i).getMINbattlepoints();
-            }
-        }
+        int totalBattlePointsInSubmittedStage = getBattlePointsOfStage(game, request.getStage());
 
         for(int i = 1; i < numStages+1; i++){
-            int numCardsInStage = game.getStage(i).size();
-            int totalBattlePointsInStage = 0;
-            for(int j = 0; j < numCardsInStage; j++){
-                //NEED LOGIC FOR MIN OR MAX BATTLEPOINTS
-                totalBattlePointsInStage += game.getStage(i).get(j).getMINbattlepoints();
-            }
-            if(totalBattlePointsInStage > totalBattlePointsInSubmittedStage){
-                isBigger = false;
-                break;
+            if(game.getStage(i).get(0).getType().equals("Foe")) {
+                int totalBattlePointsInStage = getBattlePointsOfStage(game, i);
+                if (totalBattlePointsInStage > totalBattlePointsInSubmittedStage) {
+                    isBigger = false;
+                    break;
+                }
             }
         }
         //If False, return an error and return cards back to player
@@ -169,7 +150,7 @@ public class QuestService {
                 simpMessagingTemplate.convertAndSend("/topic/quest-build-complete/"+gameId
                         , game.getCurrentStoryCard());
                 //Update player statuses and send to next user in line to see if they want to join or not
-                int indexToSendTo = game.getPlayers().indexOf(game.getMainPlayer())+1%game.getPlayers().size();
+                int indexToSendTo = (game.getPlayers().indexOf(game.getMainPlayer())+1) % game.getPlayers().size();
                 updatePlayerStatusesClockwise(game, game.getPlayers().indexOf(game.getMainPlayer()));
                 simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
                         "/topic/quest-build-complete/"+gameId, game.getCurrentStoryCard());
@@ -406,25 +387,6 @@ public class QuestService {
         }
     }
 
-    private void updatePlayerStatuses(Game game) {
-        //Quest card -> Main player is current player
-        if(game.getCurrentStoryCard().getType().equals("Quest")){
-            for(int i = 0; i < game.getPlayers().size();i++){
-                if(game.getPlayers().get(i).equals(game.getMainPlayer())){
-                    game.getPlayers().get(i).setStatus("current");
-                }
-                else{
-                    game.getPlayers().get(i).setStatus("waiting");
-                }
-            }
-        }
-        //Event card -> set everyone to waiting (Event Service will change players to current if they need to do something)
-        else if(game.getCurrentStoryCard().getType().equals("Event")){
-            for(int i = 0; i < game.getPlayers().size();i++){
-                game.getPlayers().get(i).setStatus("waiting");
-            }
-        }
-    }
 
     private void updatePlayerStatusesClockwise(Game game, int indexOfWaiting) {
         int indexOfNextCurrent = indexOfWaiting+1%game.getPlayers().size();
@@ -438,4 +400,26 @@ public class QuestService {
         }
         p.setWeaponCardsPlayed(new ArrayList<>());
     }
+
+    private int getBattlePointsOfStage(Game game, Integer stage){
+        int totalBattlePointsInSubmittedStage = 0;
+        for(int i = 0; i < game.getStage(stage).size(); i++){
+            //Checking if we should use Min vs Max battlepoints
+            if(game.getCurrentStoryCard().getFoevalue().equals("All")){
+                totalBattlePointsInSubmittedStage += game.getStage(stage).get(i).getMAXbattlepoints();
+            }
+            else if(game.getCurrentStoryCard().getFoevalue().equals("All Saxons")
+                    && game.getStage(stage).get(i).getName().contains("Saxon")){
+                totalBattlePointsInSubmittedStage += game.getStage(stage).get(i).getMAXbattlepoints();
+            }
+            else if(game.getCurrentStoryCard().getFoevalue().equals(game.getStage(stage).get(i).getName())){
+                totalBattlePointsInSubmittedStage += game.getStage(stage).get(i).getMAXbattlepoints();
+            }
+            else{
+                totalBattlePointsInSubmittedStage += game.getStage(stage).get(i).getMINbattlepoints();
+            }
+        }
+        return totalBattlePointsInSubmittedStage;
+    }
+
 }
