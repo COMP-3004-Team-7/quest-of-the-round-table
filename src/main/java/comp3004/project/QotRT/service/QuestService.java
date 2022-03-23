@@ -76,22 +76,27 @@ public class QuestService {
         Game game = gameService.getGame(gameId);
 
         if(game.getStage(request.getStage()).isEmpty()){
-            if(!request.getCard().getType().equals("Foe")){
-                return ResponseEntity.badRequest().body("Must submit Foe Card first");
+            if(!request.getCard().getType().equals("Foe") && (!request.getCard().getType().equals("Test"))){
+                return ResponseEntity.badRequest().body("Must submit Foe Card or Test First ");
             }
         }
         else{
-            if(!request.getCard().getType().equals("Weapon")){
-                return ResponseEntity.badRequest().body("Must supplement Foe card with Weapon Cards Only");
-            }
-            else{
-                //Check for duplicate weapons
-                for(int i = 0; i < game.getStage(request.getStage()).size(); i++){
-                    if(game.getStage(request.getStage()).get(i).getName().equals(request.getCard().getName())){
-                        return ResponseEntity.badRequest().body("Cannot submit duplicate weapon in same stage");
+            if(game.getStage(request.getStage()).get(0).getType().equals("Foe")){
+                if(!request.getCard().getType().equals("Weapon")){
+                    return ResponseEntity.badRequest().body("Must supplement Foe card with Weapon Cards Only");
+                }
+                else{
+                    //Check for duplicate weapons
+                    for(int i = 0; i < game.getStage(request.getStage()).size(); i++){
+                        if(game.getStage(request.getStage()).get(i).getName().equals(request.getCard().getName())){
+                            return ResponseEntity.badRequest().body("Cannot submit duplicate weapon in same stage");
+                        }
                     }
                 }
+            }else{
+                return ResponseEntity.badRequest().body("Can't add a card to a test card");
             }
+
         }
         //If we get here then no errors have occurred, and we can add card to current stage
         game.addCardToStage(request.getCard(), request.getStage());

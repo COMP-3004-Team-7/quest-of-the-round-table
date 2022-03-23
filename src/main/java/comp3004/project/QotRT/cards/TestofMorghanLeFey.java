@@ -7,7 +7,8 @@ public class TestofMorghanLeFey extends Card {
         name = "Test of Morghan Le Fey";
         //realcards.add(this);
        // battlepoints = 0;
-        bids = 1;
+        this.bids = 3;
+        this.type = "Test";
         specialevent = null;
         System.out.println("added test of morghan le fey to the deck of cards");
     }
