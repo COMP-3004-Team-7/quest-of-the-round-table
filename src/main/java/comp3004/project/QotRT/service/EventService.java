@@ -2,6 +2,7 @@ package comp3004.project.QotRT.service;
 
 import comp3004.project.QotRT.cards.*;
 import comp3004.project.QotRT.controller.dto.DiscardRequest;
+import comp3004.project.QotRT.controller.stratPatternNewStory.NewStoryCardDealer;
 import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +15,7 @@ import java.util.HashMap;
 @Service
 
 public class EventService {
-
+    private final NewStoryCardDealer newStoryCardDealer = new NewStoryCardDealer();
 
     public void doEvent(Game game, SimpMessagingTemplate simpMessagingTemplate){
         if(game.getCurrentStoryCard() instanceof ChivalrousDeed) {
@@ -56,6 +57,8 @@ public class EventService {
                 playerArrayList.get(i).setRank();
                 //SEND MESSAGE TO UPDATE PLAYER RANK (IF CHANGED)
             }
+            //TODO Check for winners
+            newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         }
         //All players except player drawing this card lose 1 shield
         else if(game.getCurrentStoryCard() instanceof Pox){
@@ -67,6 +70,7 @@ public class EventService {
                     }
                 }
             }
+            newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         }
         //Drawer loses 2 shields if possible
         else if(game.getCurrentStoryCard() instanceof Plague){
@@ -75,6 +79,7 @@ public class EventService {
                 //TODO
                 //Send simp message to player
             }
+            newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         }
         else if(game.getCurrentStoryCard() instanceof KingsRecognition){
             //FIND THE HIGHEST RANK PLAYER
@@ -165,6 +170,7 @@ public class EventService {
                 simpMessagingTemplate.convertAndSendToUser(lowestRankedPlayers.get(i).getName(),
                         "/topic/cards-in-hand/"+game.getGameId(), lowestRankedPlayers.get(i).getCards());
             }
+            newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         }
         //All allies in play must be discarded
         else if(game.getCurrentStoryCard() instanceof CourtCamelot){
@@ -172,9 +178,11 @@ public class EventService {
                 game.getPlayers().get(i).setAllies(new ArrayList<>());
                 //Send Simp Message to the player with updated allies (i.e. none)
             }
+            newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         }
         else if(game.getCurrentStoryCard() instanceof KingsArms){
             game.setBonusShield(2);
+            newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         }
         //All players draw 2 adventure cards
         else if(game.getCurrentStoryCard() instanceof ProsperityRealm){
@@ -185,6 +193,7 @@ public class EventService {
                 simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(i).getName(),
                         "/topic/cards-in-hand/"+game.getGameId(), game.getPlayers().get(i).getCards());
             }
+            newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         }
     }
 
@@ -215,6 +224,8 @@ public class EventService {
             }
         }
         simpMessagingTemplate.convertAndSend("/topic/discard-pile/" + request.getGameId(), game.getAdventureDeck().getDiscardPile());
+
+        newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         return ResponseEntity.ok().body("");
     }
 
@@ -245,6 +256,8 @@ public class EventService {
             }
         }
         simpMessagingTemplate.convertAndSend("/topic/discard-pile/" + request.getGameId(), game.getAdventureDeck().getDiscardPile());
+
+        newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         return ResponseEntity.ok().body("");
     }
 }
