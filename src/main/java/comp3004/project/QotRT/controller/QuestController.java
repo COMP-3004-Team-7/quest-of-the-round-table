@@ -93,10 +93,22 @@ public class QuestController {
     public ResponseEntity completeCardsPlayedAgainstFoe(@RequestParam String gameId, @RequestBody SubmitStageRequest request) throws Exception {
         return questService.completeCardsPlayedAgainstFoe(gameId, request, simpMessagingTemplate, gameService);
     }
+
     //player submits bid for the test
     @PostMapping("/submit-bid")
     public ResponseEntity submitBid(@RequestParam String gameId, @RequestBody SubmitBidRequest request) throws Exception {
         return questService.submitBid(gameId, request, simpMessagingTemplate, gameService);
+    }
 
+    //player declines to submit bid for the test
+    @PostMapping("/decline-to-submit-bid")
+    public ResponseEntity declineToSubmitBid(@RequestParam String gameId, @RequestBody SubmitStageRequest request) throws Exception {
+        return questService.declineToSubmitBid(gameId, request, simpMessagingTemplate, gameService);
+    }
+
+    //player declines to submit bid for the test
+    @PostMapping("/discard-cards-for-test")
+    public ResponseEntity discardCardsForTest(@RequestParam String gameId, @RequestBody SelectSponsorCardRequest request) throws Exception {
+        return questService.discardForTestCard(gameId, request, simpMessagingTemplate, gameService);
     }
 }

@@ -260,4 +260,54 @@ public class EventService {
         newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         return ResponseEntity.ok().body("");
     }
+
+
+    //ATTEMPT AT CONSOLIDATING THE 2 DISCARD METHODS ABOVE (DISCARDFOE & DISCARDWEAPON)
+
+//    public ResponseEntity discardCard(String gameId, DiscardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+//        Game game = gameService.getGame(request.getGameId());
+//        Card discarded;
+//        //Check if they have a weapon -> if they do, then their request should be trying to discard a weapon. otherwise a foe
+//        for(int i = 0; i < game.getPlayers().size(); i++){
+//            if(game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
+//                for(int j = 0; j < game.getPlayers().get(i).getCards().size(); j++){
+//                    if(game.getPlayers().get(i).getCards().get(j).getType().equals("Weapon") && !request.getCard().getType().equals("Weapon")){
+//                        return ResponseEntity.badRequest().body("You have a weapon.. You must discard 1 weapon");
+//                    }
+//                }
+//            }
+//        }
+//        //Check if discarding weapon -> send back all is good, no more discarding
+//        if(request.getCard().getType().equals("Weapon") || request.getCard().getType().equals("Foe")){
+//            //Remove discarded cards from players hand and move to adventure deck discard pile
+//            for (int i = 0 ; i < game.getPlayers().size(); i++){
+//                if (game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
+//                    for (int j = 0; j<game.getPlayers().get(i).getCards().size(); j++){
+//                        if (game.getPlayers().get(i).getCards().get(j).getName().equals(request.getCard().getName())){
+//                            discarded = game.getPlayers().get(i).getCards().remove(j);
+//                            game.getAdventureDeck().discardCard(discarded);
+//                            break;
+//                        }
+//                    }
+//                    //Send card back to player
+//                    simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+request.getGameId()+"/"+
+//                            game.getPlayers().get(i).getUsername(), game.getPlayers().get(i).getCards());
+//                    break;
+//                }
+//            }
+//            simpMessagingTemplate.convertAndSend("/topic/discard-pile/" + request.getGameId(), game.getAdventureDeck().getDiscardPile());
+//            if(request.getCard().getType().equals("Foe")){
+//                //Todo need some way to tell if this is first discarded foe or 2nd
+//                return ResponseEntity.ok().body("Successfully discarded your weapon");
+//            }
+//            else{
+//                newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
+//                return ResponseEntity.ok().body("Successfully discarded your weapon");
+//            }
+//        }
+//        //Have to discard foe or weapon
+//        else{
+//            return ResponseEntity.badRequest().body("Can only discard weapon or 2 foes (if you have them)");
+//        }
+//    }
 }

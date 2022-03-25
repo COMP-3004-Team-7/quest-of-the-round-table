@@ -2,10 +2,7 @@ package comp3004.project.QotRT.service;
 
 import comp3004.project.QotRT.cards.Card;
 import comp3004.project.QotRT.cards.StoryCard;
-import comp3004.project.QotRT.controller.dto.ConnectRequest;
-import comp3004.project.QotRT.controller.dto.SelectSponsorCardRequest;
-import comp3004.project.QotRT.controller.dto.SubmitBidRequest;
-import comp3004.project.QotRT.controller.dto.SubmitStageRequest;
+import comp3004.project.QotRT.controller.dto.*;
 import comp3004.project.QotRT.controller.stratPatternNewStory.NewStoryCardDealer;
 import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
@@ -355,20 +352,9 @@ public class QuestService {
 
     public ResponseEntity submitBid(String gameId, SubmitBidRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
         Game game = gameService.getGame(gameId);
-        int numbids = game.getStage(request.getStage()).get(0).getBids();
-        if(game.getStage(request.getStage()).get(0).getName().equals("Test of Questing Beast")){
-            if(!game.getCurrentStoryCard().getName().equals("Search for the Questing Beast")){
-                numbids = 2;
-            }
-        }
+        int numbids = getCurrentMaxBid(game, request.getStage());
         int index = 0;
-        int i = 0;
-        for(; i < game.getQuestingPlayers().size();i++){
-
-            int bid = game.getQuestingPlayers().get(i).getBid();
-            if(bid > numbids){
-                numbids = bid;
-            }
+        for(int i = 0; i < game.getQuestingPlayers().size();i++){
             if(game.getQuestingPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
                 index = i;
             }
@@ -382,7 +368,7 @@ public class QuestService {
         game.getQuestingPlayers().get(index).setBid(request.getBid());
         if( index == game.getQuestingPlayers().size()-1 ){
             simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(index).getName(),
-                    "/topic/passed-test/"+gameId, request.getBid());
+                    "/topic/fulfill-bid/"+gameId, request.getBid());
         }else{
             game.getQuestingPlayers().get(index).setStatus("waiting");
             game.getQuestingPlayers().get(index+1).setStatus("current");
@@ -391,19 +377,89 @@ public class QuestService {
         }
         return ResponseEntity.ok().body("Success");
     }
+
+    public ResponseEntity declineToSubmitBid(String gameId, SubmitStageRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+        Game game = gameService.getGame(gameId);
+        //Get player who sent request
+        int index = 0;
+        int currentMaxBid = getCurrentMaxBid(game, request.getStage());
+        for(int i = 0; i < game.getQuestingPlayers().size(); i++){
+            if(game.getQuestingPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
+                index = i;
+            }
+        }
+        //Check if this is the last person in the quest to submit their response to the test card
+        if( index == game.getQuestingPlayers().size()-1 ){
+            Player removedPlayer = game.getQuestingPlayers().remove(index);
+            //nobody left -> end quest, no rewards, pull new story card
+            if(game.getQuestingPlayers().size()==0){
+                drawCardsForSponsor(game);
+                //Put all cards in quest in discard pile
+                for(int i = 1; i < 6; i++){
+                    for(int j = 0; j < game.getStage(i).size(); j++){
+                        game.getAdventureDeck().discardCard(game.getStage(i).get(j));
+                    }
+                }
+                simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
+                        game.getMainPlayer().getName(), game.getMainPlayer().getCards());
+                newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
+            }
+            //Only person left in questing array will advance to next stage (unless this is last stage)
+            else{
+                //Make them fulfill the test by discarding cards
+                removedPlayer.setStatus("waiting");
+                game.getQuestingPlayers().get(0).setStatus("current");
+                simpMessagingTemplate.convertAndSend("/topic/fulfill-bid/" + gameId + "/" +
+                        game.getQuestingPlayers().get(0).getName(), game.getQuestingPlayers().get(0).getBid());
+            }
+        }
+        //Ask next person to bid, then remove this player from questing array
+        else{
+            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(index+1).getName(),
+                    "/topic/play-against-test-stage/"+gameId, currentMaxBid);
+            game.getQuestingPlayers().remove(index);
+        }
+
+        return ResponseEntity.ok().body("Successfully removed yourself from the quest");
+    }
+
+    public ResponseEntity discardForTestCard(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+        Game game = gameService.getGame(gameId);
+
+        //Subtract 1 from players bid (card to discard essentially)
+        game.getQuestingPlayers().get(0).setBid(game.getQuestingPlayers().get(0).getBid()-1);
+        //Check if they need to discard more or not
+        if(game.getQuestingPlayers().get(0).getBid() > 0){
+            return ResponseEntity.ok().body("Discarded a card to fulfill bid, you must discard " + game.getQuestingPlayers().get(0).getBid() + " more cards.");
+        }
+        else{
+            //Last stage was this Test card
+            if(game.getCurrentStoryCard().getStages() == request.getStage()){
+                Player p = game.getQuestingPlayers().get(0);
+                p.setShields(p.getShields()+game.getBonusShield());
+                game.setBonusShield(0);
+                if(p.getRank().equals("Knight")){
+                    //ToDo deal with winning game
+                }
+                else {
+                    newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
+                }
+            }
+            //Not last stage -> move the only person who passed onto the next stage
+            else{
+                sendNextStageToQuestingPlayer(game.getGameId(), simpMessagingTemplate, game, request.getStage());
+            }
+            return ResponseEntity.ok().body("Successfully discarded all cards to fulfill test card!");
+        }
+    }
+
+
     //HELPER METHODS
 
     private void sendNextStageToQuestingPlayer(String gameId, SimpMessagingTemplate simpMessagingTemplate, Game game, int stage) {
-        //Update players (everyone except main player gets set to current)
-        for(int i = 0; i < game.getPlayers().size();i++){
-            if(game.getPlayers().get(i).equals(game.getMainPlayer())){
-                game.getPlayers().get(i).setStatus("waiting");
-            }
-            else{
-                game.getPlayers().get(i).setStatus("current");
-            }
-        }
+        //Update players
         for (int i=0 ; i < game.getQuestingPlayers().size(); i++){
+            game.getPlayers().get(i).setStatus("current");
             Card card = game.getAdventureDeck().drawCard();
             game.getQuestingPlayers().get(i).getCards().add(card);
             simpMessagingTemplate.convertAndSend("/topic/play-against-quest-stage/"+gameId+"/"+
@@ -462,4 +518,20 @@ public class QuestService {
         return totalBattlePointsInSubmittedStage;
     }
 
+    private int getCurrentMaxBid(Game game, int stage){
+        int numbids = game.getStage(stage).get(0).getBids();
+        if(game.getStage(stage).get(0).getName().equals("Test of Questing Beast")){
+            if(!game.getCurrentStoryCard().getName().equals("Search for the Questing Beast")){
+                numbids = 2;
+            }
+        }
+        for(int i = 0; i < game.getQuestingPlayers().size();i++){
+
+            int bid = game.getQuestingPlayers().get(i).getBid();
+            if(bid > numbids){
+                numbids = bid;
+            }
+        }
+        return numbids;
+    }
 }
