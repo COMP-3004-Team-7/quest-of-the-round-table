@@ -201,6 +201,7 @@ public class QuestService {
                 }
 
 
+
                 simpMessagingTemplate.convertAndSend("/topic/play-against-quest-stage/"+gameId+"/"+
                         game.getQuestingPlayers().get(i).getName(), game.getStage(1).get(0).getType());
                 simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
