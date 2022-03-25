@@ -138,10 +138,10 @@ public class QuestService {
         Game game = gameService.getGame(gameId);
         //Check if current stage is greater than all previous stages battlepoints
         if(game.getStage(request.getStage()).get(0).getType().equals("Foe")) {
-            //int numStages = game.getCurrentStoryCard().getStages();
+            int numStages = game.getCurrentStoryCard().getStages();
             int totalBattlePointsInSubmittedStage = getBattlePointsOfStage(game, request.getStage());
 
-            for (int i = 1; i < request.getStage() + 1; i++) {
+            for (int i = 1; i < numStages + 1; i++) {
                 if (game.getStage(i).get(0).getType().equals("Foe")) {
                     int totalBattlePointsInStage = getBattlePointsOfStage(game, i);
                     if (totalBattlePointsInStage > totalBattlePointsInSubmittedStage) {
