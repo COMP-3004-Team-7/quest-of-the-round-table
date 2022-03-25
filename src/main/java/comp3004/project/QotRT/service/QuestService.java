@@ -4,6 +4,7 @@ import comp3004.project.QotRT.cards.Card;
 import comp3004.project.QotRT.cards.StoryCard;
 import comp3004.project.QotRT.controller.dto.ConnectRequest;
 import comp3004.project.QotRT.controller.dto.SelectSponsorCardRequest;
+import comp3004.project.QotRT.controller.dto.SubmitBidRequest;
 import comp3004.project.QotRT.controller.dto.SubmitStageRequest;
 import comp3004.project.QotRT.controller.stratPatternNewStory.NewStoryCardDealer;
 import comp3004.project.QotRT.model.Game;
@@ -116,15 +117,17 @@ public class QuestService {
         //Check if current stage is greater than all previous stages battlepoints
         Boolean isBigger = true;
         Game game = gameService.getGame(gameId);
-        int numStages = game.getCurrentStoryCard().getStages();
-        int totalBattlePointsInSubmittedStage = getBattlePointsOfStage(game, request.getStage());
+        if(game.getStage(request.getStage()).get(0).getType().equals("Foe")) {
+            int numStages = game.getCurrentStoryCard().getStages();
+            int totalBattlePointsInSubmittedStage = getBattlePointsOfStage(game, request.getStage());
 
-        for(int i = 1; i < numStages+1; i++){
-            if(game.getStage(i).get(0).getType().equals("Foe")) {
-                int totalBattlePointsInStage = getBattlePointsOfStage(game, i);
-                if (totalBattlePointsInStage > totalBattlePointsInSubmittedStage) {
-                    isBigger = false;
-                    break;
+            for (int i = 1; i < numStages + 1; i++) {
+                if (game.getStage(i).get(0).getType().equals("Foe")) {
+                    int totalBattlePointsInStage = getBattlePointsOfStage(game, i);
+                    if (totalBattlePointsInStage > totalBattlePointsInSubmittedStage) {
+                        isBigger = false;
+                        break;
+                    }
                 }
             }
         }
@@ -187,9 +190,17 @@ public class QuestService {
                 game.getQuestingPlayers().get(i).getCards().add(card);
                 game.getQuestingPlayers().get(i).setStatus("current");
                 simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
-                        "/topic/play-against-quest-stage/"+gameId, game.getStage(1).get(0).getType());
-                simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
                         "/topic/cards-in-hand/"+gameId, game.getQuestingPlayers().get(i).getCards());
+                if(game.getStage(1).get(0).getType().equals("Foe")) {
+                    simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
+                            "/topic/play-against-quest-stage/" + gameId, game.getStage(1).get(0).getType());
+                }else{
+                    if(i ==0) {
+                        simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
+                                "/topic/play-against-test-stage/" + gameId, game.getStage(1).get(0).getType());
+                    }
+                }
+
             }
         }
         else{
@@ -336,6 +347,44 @@ public class QuestService {
     }
 
 
+    public ResponseEntity submitBid(String gameId, SubmitBidRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+        Game game = gameService.getGame(gameId);
+        int numbids = game.getStage(request.getStage()).get(0).getBids();
+        if(game.getStage(request.getStage()).get(0).getName().equals("Test of Questing Beast")){
+            if(!game.getCurrentStoryCard().getName().equals("Search for the Questing Beast")){
+                numbids = 2;
+            }
+        }
+        int index = 0;
+        int i = 0;
+        for(; i < game.getQuestingPlayers().size();i++){
+
+            int bid = game.getQuestingPlayers().get(i).getBid();
+            if(bid > numbids){
+                numbids = bid;
+            }
+            if(game.getQuestingPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
+                index = i;
+            }
+        }
+        if(numbids >= request.getBid()){
+            return ResponseEntity.badRequest().body("You need to bid higher than "+ numbids);
+        }
+        if(request.getBid() > game.getQuestingPlayers().get(index).getCards().size()){
+            return ResponseEntity.badRequest().body("The number of cards you bid is less than the number of cards you have ");
+        }
+        game.getQuestingPlayers().get(index).setBid(request.getBid());
+        if( index == game.getQuestingPlayers().size()-1 ){
+            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(index).getName(),
+                    "/topic/passed-test/"+gameId, request.getBid());
+        }else{
+            game.getQuestingPlayers().get(index).setStatus("waiting");
+            game.getQuestingPlayers().get(index+1).setStatus("current");
+            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(index+1).getName(),
+                    "/topic/play-against-test-stage/"+gameId, request.getBid());
+        }
+        return ResponseEntity.ok().body("Success");
+    }
     //HELPER METHODS
 
     private void sendNextStageToQuestingPlayer(String gameId, SimpMessagingTemplate simpMessagingTemplate, Game game, int stage) {

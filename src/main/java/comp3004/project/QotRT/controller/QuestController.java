@@ -4,6 +4,7 @@ import comp3004.project.QotRT.cards.Card;
 import comp3004.project.QotRT.cards.StoryCard;
 import comp3004.project.QotRT.controller.dto.ConnectRequest;
 import comp3004.project.QotRT.controller.dto.SelectSponsorCardRequest;
+import comp3004.project.QotRT.controller.dto.SubmitBidRequest;
 import comp3004.project.QotRT.controller.dto.SubmitStageRequest;
 import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
@@ -91,5 +92,11 @@ public class QuestController {
     @PostMapping("/complete-cards-played-against-foe")
     public ResponseEntity completeCardsPlayedAgainstFoe(@RequestParam String gameId, @RequestBody SubmitStageRequest request) throws Exception {
         return questService.completeCardsPlayedAgainstFoe(gameId, request, simpMessagingTemplate, gameService);
+    }
+    //player submits bid for the test
+    @PostMapping("/submit-bid")
+    public ResponseEntity submitBid(@RequestParam String gameId, @RequestBody SubmitBidRequest request) throws Exception {
+        return questService.submitBid(gameId, request, simpMessagingTemplate, gameService);
+
     }
 }

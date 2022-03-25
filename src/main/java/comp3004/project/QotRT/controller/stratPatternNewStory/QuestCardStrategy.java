@@ -21,6 +21,7 @@ public class QuestCardStrategy implements NewStoryCardStrategy{
             else{
                 game.getPlayers().get(i).setStatus("waiting");
             }
+            game.getPlayers().get(i).setBid(0);
         }
         //Set questing players to empty before starting
         game.setQuestingPlayers(new ArrayList<>());

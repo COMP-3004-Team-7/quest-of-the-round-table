@@ -16,6 +16,7 @@ public class Player implements Principal {
     private Integer battlePoints;
     private Integer shields;
     private String rank;
+    private Integer bid;
 
     public Player() {
         cards = new ArrayList<>();
@@ -26,6 +27,7 @@ public class Player implements Principal {
         battlePoints = 5;
         shields = 0;
         rank = "Squire";
+        bid = 0;
     }
 
     public Player(String principalName) {
@@ -38,6 +40,7 @@ public class Player implements Principal {
         battlePoints = 5;
         shields = 0;
         rank = "Squire";
+        bid = 0;
     }
 
     public Player(String username, Integer playerNumber) {
@@ -49,6 +52,7 @@ public class Player implements Principal {
         battlePoints = 5;
         shields = 0;
         rank = "Squire";
+        bid = 0;
     }
 
     public Player(String username, String principalName, Integer playerNumber) {
@@ -61,6 +65,7 @@ public class Player implements Principal {
         battlePoints = 5;
         shields = 0;
         rank = "Squire";
+        bid = 0;
     }
 
     public ArrayList<Card> getAllies() {
@@ -77,6 +82,14 @@ public class Player implements Principal {
 
     public void setShields(Integer shields) {
         this.shields = shields; this.setRank();
+    }
+
+    public Integer getBid() {
+        return bid;
+    }
+
+    public void setBid(Integer bid) {
+        this.bid = bid;
     }
 
     public Integer getBattlePoints() {
