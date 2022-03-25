@@ -40,8 +40,8 @@ public class QuestService {
             }
         }
         else{
-            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get((index+1)%sizeOfPlayersList).getName(),"/topic/sponsor-quest/"+gameId
-                    ,game.getCurrentStoryCard());
+            simpMessagingTemplate.convertAndSend("/topic/sponsor-quest/"+gameId+"/"+
+                            game.getPlayers().get((index+1)%sizeOfPlayersList).getName(), game.getCurrentStoryCard());
         }
         return "";
     }
@@ -103,8 +103,7 @@ public class QuestService {
                     }
                 }
                 //Send back updated player hand
-                simpMessagingTemplate.convertAndSendToUser(p.getName(),"/topic/cards-in-hand/"+gameId
-                        ,p.getCards());
+                simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+p.getName(), p.getCards());
                 break;
             }
         }
@@ -139,8 +138,7 @@ public class QuestService {
                     Player p = game.getPlayers().get(i);
                     p.getCards().addAll(game.getStage(request.getStage()));
                     //Send back updated player hand
-                    simpMessagingTemplate.convertAndSendToUser(p.getName(),"/topic/cards-in-hand/"+gameId
-                            ,p.getCards());
+                    simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+p.getName(), p.getCards());
                     break;
                 }
             }
@@ -155,13 +153,13 @@ public class QuestService {
                 //Update player statuses and send to next user in line to see if they want to join or not
                 int indexToSendTo = (game.getPlayers().indexOf(game.getMainPlayer())+1) % game.getPlayers().size();
                 updatePlayerStatusesClockwise(game, game.getPlayers().indexOf(game.getMainPlayer()));
-                simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
-                        "/topic/quest-build-complete/"+gameId, game.getCurrentStoryCard());
+                simpMessagingTemplate.convertAndSend("/topic/quest-build-complete/"+gameId+"/"+
+                        game.getPlayers().get(indexToSendTo).getName(), game.getCurrentStoryCard());
             }
             //Not last stage --> Ask Player to complete the next quest stage
             else{
-                simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),
-                        "/topic/build-quest-stage/"+gameId, request.getStage()+1);
+                simpMessagingTemplate.convertAndSend("/topic/build-quest-stage/"+gameId+"/"+
+                        game.getMainPlayer().getName(), request.getStage()+1);
             }
         }
 
@@ -189,6 +187,7 @@ public class QuestService {
                 Card card = game.getAdventureDeck().drawCard();
                 game.getQuestingPlayers().get(i).getCards().add(card);
                 game.getQuestingPlayers().get(i).setStatus("current");
+
                 simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
                         "/topic/cards-in-hand/"+gameId, game.getQuestingPlayers().get(i).getCards());
                 if(game.getStage(1).get(0).getType().equals("Foe")) {
@@ -201,6 +200,12 @@ public class QuestService {
                     }
                 }
 
+
+                simpMessagingTemplate.convertAndSend("/topic/play-against-quest-stage/"+gameId+"/"+
+                        game.getQuestingPlayers().get(i).getName(), game.getStage(1).get(0).getType());
+                simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
+                        game.getQuestingPlayers().get(i).getName(), game.getQuestingPlayers().get(i).getCards());
+
             }
         }
         else{
@@ -209,8 +214,8 @@ public class QuestService {
             updatePlayerStatusesClockwise(game, index);
 //            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
 //                        "/topic/cards-in-hand/"+gameId, game.getPlayers().get(indexToSendTo).getCards());
-            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
-                    "/topic/quest-build-complete/"+gameId, game.getCurrentStoryCard());
+            simpMessagingTemplate.convertAndSend("/topic/quest-build-complete/"+gameId+"/"+
+                    game.getPlayers().get(indexToSendTo).getName(), game.getCurrentStoryCard());
         }
 
         return ResponseEntity.ok().body("Successfully joined the quest!");
@@ -238,8 +243,8 @@ public class QuestService {
                         game.getAdventureDeck().discardCard(game.getStage(i).get(j));
                     }
                 }
-                simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),
-                        "/topic/cards-in-hand/"+gameId, game.getMainPlayer().getCards());
+                simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
+                        game.getMainPlayer().getName(), game.getMainPlayer().getCards());
                 newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
             }
             else {
@@ -253,8 +258,8 @@ public class QuestService {
             updatePlayerStatusesClockwise(game, index);
 //            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
 //                    "/topic/cards-in-hand/"+gameId, game.getPlayers().get(indexToSendTo).getCards());
-            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
-                    "/topic/quest-build-complete/"+gameId, game.getCurrentStoryCard());
+            simpMessagingTemplate.convertAndSend("/topic/quest-build-complete/"+gameId+"/"+
+                    game.getPlayers().get(indexToSendTo).getName(), game.getCurrentStoryCard());
         }
 
         return ResponseEntity.ok().body("Successfully declined to join quest!");
@@ -400,10 +405,10 @@ public class QuestService {
         for (int i=0 ; i < game.getQuestingPlayers().size(); i++){
             Card card = game.getAdventureDeck().drawCard();
             game.getQuestingPlayers().get(i).getCards().add(card);
-            simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
-                    "/topic/play-against-quest-stage/"+gameId, game.getStage(stage).get(0));
-            simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
-                    "/topic/cards-in-hand/"+gameId, game.getQuestingPlayers().get(i).getCards());
+            simpMessagingTemplate.convertAndSend("/topic/play-against-quest-stage/"+gameId+"/"+
+                            game.getQuestingPlayers().get(i).getName(), game.getStage(stage).get(0));
+            simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
+                    game.getQuestingPlayers().get(i).getName(), game.getQuestingPlayers().get(i).getCards());
         }
     }
 
