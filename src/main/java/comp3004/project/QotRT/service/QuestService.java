@@ -4,6 +4,9 @@ import comp3004.project.QotRT.cards.Card;
 import comp3004.project.QotRT.cards.StoryCard;
 import comp3004.project.QotRT.controller.dto.*;
 import comp3004.project.QotRT.controller.stratPatternNewStory.NewStoryCardDealer;
+import comp3004.project.QotRT.controller.stratPatternProceedQuestStage.QuestStageProceeder;
+import comp3004.project.QotRT.controller.stratPatternProceedQuestStage.TestStageDeclineBidStrategy;
+import comp3004.project.QotRT.controller.stratPatternProceedQuestStage.TestStageSubmitBidStrategy;
 import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +18,7 @@ import java.util.ArrayList;
 @Service
 public class QuestService {
     private final NewStoryCardDealer newStoryCardDealer = new NewStoryCardDealer();
+    private final QuestStageProceeder questStageProceeder = new QuestStageProceeder();
 
     //Player has chosen to decline to sponsor the Quest
     public String declineSponsorQuest(String gameId , ConnectRequest request , SimpMessagingTemplate simpMessagingTemplate, GameService gameService){
@@ -366,59 +370,18 @@ public class QuestService {
             return ResponseEntity.badRequest().body("The number of cards you bid is less than the number of cards you have ");
         }
         game.getQuestingPlayers().get(index).setBid(request.getBid());
-        if( index == game.getQuestingPlayers().size()-1 ){
-            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(index).getName(),
-                    "/topic/fulfill-bid/"+gameId, request.getBid());
-        }else{
-            game.getQuestingPlayers().get(index).setStatus("waiting");
-            game.getQuestingPlayers().get(index+1).setStatus("current");
-            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(index+1).getName(),
-                    "/topic/play-against-test-stage/"+gameId, request.getBid());
-        }
+        //Proceed quest by sending out appropriate messages
+        questStageProceeder.setProceedQuestStageStrategy(new TestStageSubmitBidStrategy());
+        questStageProceeder.proceedQuestStage(game, simpMessagingTemplate, request.getStage(), game.getQuestingPlayers().get(index));
+
         return ResponseEntity.ok().body("Success");
     }
 
     public ResponseEntity declineToSubmitBid(String gameId, SubmitStageRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
         Game game = gameService.getGame(gameId);
-        //Get player who sent request
-        int index = 0;
-        int currentMaxBid = getCurrentMaxBid(game, request.getStage());
-        for(int i = 0; i < game.getQuestingPlayers().size(); i++){
-            if(game.getQuestingPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
-                index = i;
-            }
-        }
-        //Check if this is the last person in the quest to submit their response to the test card
-        if( index == game.getQuestingPlayers().size()-1 ){
-            Player removedPlayer = game.getQuestingPlayers().remove(index);
-            //nobody left -> end quest, no rewards, pull new story card
-            if(game.getQuestingPlayers().size()==0){
-                drawCardsForSponsor(game);
-                //Put all cards in quest in discard pile
-                for(int i = 1; i < 6; i++){
-                    for(int j = 0; j < game.getStage(i).size(); j++){
-                        game.getAdventureDeck().discardCard(game.getStage(i).get(j));
-                    }
-                }
-                simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
-                        game.getMainPlayer().getName(), game.getMainPlayer().getCards());
-                newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
-            }
-            //Only person left in questing array will advance to next stage (unless this is last stage)
-            else{
-                //Make them fulfill the test by discarding cards
-                removedPlayer.setStatus("waiting");
-                game.getQuestingPlayers().get(0).setStatus("current");
-                simpMessagingTemplate.convertAndSend("/topic/fulfill-bid/" + gameId + "/" +
-                        game.getQuestingPlayers().get(0).getName(), game.getQuestingPlayers().get(0).getBid());
-            }
-        }
-        //Ask next person to bid, then remove this player from questing array
-        else{
-            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(index+1).getName(),
-                    "/topic/play-against-test-stage/"+gameId, currentMaxBid);
-            game.getQuestingPlayers().remove(index);
-        }
+        //Proceed quest forward
+        questStageProceeder.setProceedQuestStageStrategy(new TestStageDeclineBidStrategy());
+        questStageProceeder.proceedQuestStage(game,simpMessagingTemplate,request.getStage(),request.getPlayer());
 
         return ResponseEntity.ok().body("Successfully removed yourself from the quest");
     }
