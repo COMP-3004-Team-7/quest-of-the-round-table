@@ -4,6 +4,7 @@ import comp3004.project.QotRT.cards.Card;
 import comp3004.project.QotRT.cards.StoryCard;
 import comp3004.project.QotRT.controller.dto.*;
 import comp3004.project.QotRT.controller.stratPatternNewStory.NewStoryCardDealer;
+import comp3004.project.QotRT.controller.stratPatternProceedQuestStage.FoeStageStrategy;
 import comp3004.project.QotRT.controller.stratPatternProceedQuestStage.QuestStageProceeder;
 import comp3004.project.QotRT.controller.stratPatternProceedQuestStage.TestStageDeclineBidStrategy;
 import comp3004.project.QotRT.controller.stratPatternProceedQuestStage.TestStageSubmitBidStrategy;
@@ -57,7 +58,7 @@ public class QuestService {
                 break;
             }
         }
-        //Return back to the sponsorer the story card that the sponsored
+        //Return back to the sponsorer the story card that they sponsored
         return game.getCurrentStoryCard();
     }
 
@@ -212,10 +213,8 @@ public class QuestService {
         }
         else{
             //Send to the next person asking them if they wish to join the quest
-            int indexToSendTo = index+1%game.getPlayers().size();
+            int indexToSendTo = (index+1) % game.getPlayers().size();
             updatePlayerStatusesClockwise(game, index);
-//            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
-//                        "/topic/cards-in-hand/"+gameId, game.getPlayers().get(indexToSendTo).getCards());
             simpMessagingTemplate.convertAndSend("/topic/quest-build-complete/"+gameId+"/"+
                     game.getPlayers().get(indexToSendTo).getName(), game.getCurrentStoryCard());
         }
@@ -256,10 +255,8 @@ public class QuestService {
         }
         else{
             //Send to the next person asking them if they wish to join the quest
-            int indexToSendTo = index+1%game.getPlayers().size();
+            int indexToSendTo = (index+1) % game.getPlayers().size();
             updatePlayerStatusesClockwise(game, index);
-//            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(indexToSendTo).getName(),
-//                    "/topic/cards-in-hand/"+gameId, game.getPlayers().get(indexToSendTo).getCards());
             simpMessagingTemplate.convertAndSend("/topic/quest-build-complete/"+gameId+"/"+
                     game.getPlayers().get(indexToSendTo).getName(), game.getCurrentStoryCard());
         }
@@ -293,63 +290,11 @@ public class QuestService {
     }
 
     public ResponseEntity completeCardsPlayedAgainstFoe(String gameId, SubmitStageRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
-        //Update this player to 'waiting'
         Game game = gameService.getGame(gameId);
-        for(int i = 0; i < game.getQuestingPlayers().size(); i++){
-            if(game.getQuestingPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
-                game.getQuestingPlayers().get(i).setStatus("waiting");
-            }
-        }
-        //Check if all questing players have submitted their cards
-        int numWaiting = 0;
-        for(int i = 0; i < game.getQuestingPlayers().size(); i++){
-            if(game.getQuestingPlayers().get(i).getStatus().equals("waiting")){
-                numWaiting++;
-            }
-        }
-        if(numWaiting == game.getQuestingPlayers().size()){
-            //Check for who moves on to next stage, etc
-            //Also check if this is the last stage of quest --> check for winners of quest
+        //Proceed quest stage with foe card forward
+        questStageProceeder.setProceedQuestStageStrategy(new FoeStageStrategy());
+        questStageProceeder.proceedQuestStage(game, simpMessagingTemplate, request.getStage(), request.getPlayer());
 
-            //TOTAL FOE BATTLE POINTS
-            int foeStagePoints = getBattlePointsOfStage(game, request.getStage());
-
-            //COMPARING THE WEAPONS CARD PLAYED TO THE TOTAL FOE BATTLE POINTS OF THE CURRENT STAGE
-            //TODO also have to check rank of player with weapon cards played
-            int weaponCardsPlayed = 0;
-            for(int i=0; i<game.getQuestingPlayers().size(); i++){
-                for(int j=0 ; j<game.getQuestingPlayers().get(i).getWeaponCardsPlayed().size(); j++) {
-                    weaponCardsPlayed += game.getQuestingPlayers().get(i).getWeaponCardsPlayed().get(i).getMAXbattlepoints();
-                    if(weaponCardsPlayed>=foeStagePoints){
-                        //THIS PLAYER HAS MOVED ON TO THE NEXT STAGE
-                        break;
-                    }
-                }
-                if(weaponCardsPlayed<foeStagePoints){
-                    //THIS PLAYER IS ELIMINATED FROM THE QUEST -> REMOVED FROM THE QUESTINGPLAYERSLIST
-                    //SEND SIMPMESSAGING TEMPLATE TO THE USER THAT HAVE BEEN REMOVED FROM THE LIST
-                    removeWeaponCards(game, game.getQuestingPlayers().get(i));
-                    game.getQuestingPlayers().remove(i);
-                    i--;
-                }
-                weaponCardsPlayed = 0;
-            }
-            if(game.getCurrentStoryCard().getStages() == request.getStage()){
-             //TODO
-                //CHECK IF PLAYER(S) HAVE WON
-                //OTHERWISE, DRAW ANOTHER STORY CARD
-                for (int i=0; i < game.getQuestingPlayers().size(); i++){
-                    game.getQuestingPlayers().get(i).setShields(request.getStage()+game.getBonusShield());
-                    game.setBonusShield(0);
-                    game.getQuestingPlayers().get(i).setRank();
-                    removeWeaponCards(game, game.getQuestingPlayers().get(i));
-                }
-                drawCardsForSponsor(game);
-            }
-            else{
-                sendNextStageToQuestingPlayer(gameId, simpMessagingTemplate, game, request.getStage());
-            }
-        }
         return ResponseEntity.ok().body("Success");
     }
 
@@ -402,7 +347,7 @@ public class QuestService {
                 p.setShields(p.getShields()+game.getBonusShield());
                 game.setBonusShield(0);
                 if(p.getRank().equals("Knight")){
-                    //ToDo deal with winning game
+                    simpMessagingTemplate.convertAndSend("/topic/game-winner/" + gameId, p.getUsername() +" won the game!");
                 }
                 else {
                     newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
@@ -448,17 +393,11 @@ public class QuestService {
 
 
     private void updatePlayerStatusesClockwise(Game game, int indexOfWaiting) {
-        int indexOfNextCurrent = indexOfWaiting+1%game.getPlayers().size();
+        int indexOfNextCurrent = (indexOfWaiting+1) % game.getPlayers().size();
         game.getPlayers().get(indexOfWaiting).setStatus("waiting");
         game.getPlayers().get(indexOfNextCurrent).setStatus("current");
     }
 
-    private void removeWeaponCards(Game game, Player p){
-        for(Card c: p.getWeaponCardsPlayed()){
-            game.getAdventureDeck().discardCard(c);
-        }
-        p.setWeaponCardsPlayed(new ArrayList<>());
-    }
 
     private int getBattlePointsOfStage(Game game, Integer stage){
         int totalBattlePointsInSubmittedStage = 0;
