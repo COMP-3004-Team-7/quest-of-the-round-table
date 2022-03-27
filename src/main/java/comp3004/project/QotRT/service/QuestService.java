@@ -72,6 +72,19 @@ public class QuestService {
             if(!request.getCard().getType().equals("Foe") && (!request.getCard().getType().equals("Test"))){
                 return ResponseEntity.badRequest().body("Must submit Foe Card or Test First ");
             }
+            //Check if this is only test card in quest
+            if(request.getCard().getType().equals("Test")){
+                boolean isOnlyTestCard = true;
+                int numStages = request.getStage();
+                for (int i = 1; i < numStages; i++) {
+                    if (game.getStage(i).get(0).getType().equals("Test")) {
+                        isOnlyTestCard = false;
+                    }
+                }
+                if(!isOnlyTestCard){
+                    return ResponseEntity.badRequest().body("Can only submit 1 test card per quest");
+                }
+            }
         }
         else{
             if(game.getStage(request.getStage()).get(0).getType().equals("Foe")){
@@ -115,9 +128,10 @@ public class QuestService {
 
 
     public ResponseEntity submitSponsorStage(String gameId, SubmitStageRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
-        //Check if current stage is greater than all previous stages battlepoints
+
         Boolean isBigger = true;
         Game game = gameService.getGame(gameId);
+        //Check if current stage is greater than all previous stages battlepoints
         if(game.getStage(request.getStage()).get(0).getType().equals("Foe")) {
             int numStages = game.getCurrentStoryCard().getStages();
             int totalBattlePointsInSubmittedStage = getBattlePointsOfStage(game, request.getStage());
