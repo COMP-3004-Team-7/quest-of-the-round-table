@@ -61,11 +61,15 @@ public class FoeStageStrategy implements ProceedQuestStageStrategy{
                 //check for winners of game, otherwise draw a new story card
                 ArrayList<Player> winners = new ArrayList<>();
                 for (int i=0; i < game.getQuestingPlayers().size(); i++){
-                    game.getQuestingPlayers().get(i).setShields(stage+game.getBonusShield());
+                    int numShields = stage+game.getBonusShield();
+                    game.getQuestingPlayers().get(i).setShields(numShields + game.getQuestingPlayers().get(i).getShields());
                     game.setBonusShield(0);
                     game.getQuestingPlayers().get(i).setRank();
                     removeWeaponCards(game, game.getQuestingPlayers().get(i));
                     removeAmourCards(game, game.getQuestingPlayers().get(i));
+                    simpMessagingTemplate.convertAndSend("/topic/quest-winner/"+gameId+"/"+
+                            game.getQuestingPlayers().get(i).getName(),
+                            "You won the quest and were awarded " + numShields + " shields!" );
                     if(game.getQuestingPlayers().get(i).getRank().equals("Knight")){
                         winners.add(game.getQuestingPlayers().get(i));
                     }

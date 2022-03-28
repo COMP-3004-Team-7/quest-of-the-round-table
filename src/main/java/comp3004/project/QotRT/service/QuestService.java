@@ -410,14 +410,18 @@ public class QuestService {
             //Last stage was this Test card
             if(game.getCurrentStoryCard().getStages() == request.getStage()){
                 Player p = game.getQuestingPlayers().get(0);
-                p.setShields(p.getShields()+game.getBonusShield());
+                int numShields = game.getBonusShield() + game.getCurrentStoryCard().getStages();
+                p.setShields(p.getShields()+numShields);
                 game.setBonusShield(0);
                 if(p.getRank().equals("Knight")){
                     simpMessagingTemplate.convertAndSend("/topic/game-winner/" + gameId, p.getUsername() +" won the game!");
                 }
                 else {
-                    //Remove amour cards from player (end of quest) and draw new story card
+                    //Remove amour cards from player (end of quest), send message, and draw new story card
                     removeAmourCards(game, p);
+                    simpMessagingTemplate.convertAndSend("/topic/quest-winner/"+gameId+"/"+
+                                    p.getName(),
+                            "You won the quest and were awarded " + numShields + " shields!" );
                     newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
                 }
             }
