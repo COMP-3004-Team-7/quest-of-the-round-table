@@ -112,22 +112,62 @@ public class TournamentService {
     public ResponseEntity submitTournamentCard(String gameId, DiscardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
         Game game = gameService.getGame(gameId);
         //Check if card submitted is a weapon card -> if not then throw error
-        if(!request.getCard().getType().equals("Weapon")){
-            return ResponseEntity.badRequest().body("Must play weapon cards in tournament");
+        if(request.getCard().getType().equals("Foe") || request.getCard().getType().equals("Test")){
+            return ResponseEntity.badRequest().body("Can only play weapon, amour, or ally cards");
         }
         //Otherwise, check for duplicate weapon cards
-        else{
+        if(request.getCard().getType().equals("Weapon")) {
             int index = 0;
-            for (int i=0; i<game.getPlayers().size(); i++){
-                if(game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
-                    for(int j = 0; j < game.getPlayers().get(i).getWeaponCardsPlayed().size(); j++){
-                        if(game.getPlayers().get(i).getWeaponCardsPlayed().get(j).getName().equals(request.getCard().getName())){
+            for (int i = 0; i < game.getPlayers().size(); i++) {
+                if (game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())) {
+                    for (int j = 0; j < game.getPlayers().get(i).getWeaponCardsPlayed().size(); j++) {
+                        if (game.getPlayers().get(i).getWeaponCardsPlayed().get(j).getName().equals(request.getCard().getName())) {
                             return ResponseEntity.badRequest().body("Cannot play duplicate weapon cards");
                         }
                     }
+                    Player p = game.getPlayers().get(i);
                     //Otherwise, all good and we add weapon card to players played cards
-                    game.getPlayers().get(i).getWeaponCardsPlayed().add(request.getCard());
-                    break;
+                    for (int j = 0; j < p.getCards().size(); j++) {
+                        if (p.getCards().get(j).getName().equals(request.getCard().getName())) {
+                            Card c = p.getCards().remove(j);
+                            p.getWeaponCardsPlayed().add(c);
+                            simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
+                                    p.getName(), p.getCards());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if(request.getCard().getType().equals("Amour")) {
+            for (int i = 0; i < game.getTournamentPlayers().size(); i++) {
+                if (game.getTournamentPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())) {
+                    Player p = game.getTournamentPlayers().get(i);
+                    for (int j = 0; j < p.getCards().size(); j++) {
+                        if (p.getCards().get(j).getName().equals(request.getCard().getName())) {
+                            Card c = p.getCards().remove(j);
+                            p.getAmours().add(c);
+                            simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
+                                    p.getName(), p.getCards());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if(request.getCard().getType().equals("Ally")){
+            for (int i = 0; i < game.getTournamentPlayers().size(); i++) {
+                if (game.getTournamentPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())) {
+                    Player p = game.getTournamentPlayers().get(i);
+                    for (int j = 0; j < p.getCards().size(); j++) {
+                        if (p.getCards().get(j).getName().equals(request.getCard().getName())) {
+                            Card c = p.getCards().remove(j);
+                            p.getAllies().add(c);
+                            simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
+                                    p.getName(), p.getCards());
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -158,10 +198,14 @@ public class TournamentService {
                 int BattlePoints = 0;
                 Player p = game.getTournamentPlayers().get(i);
                 for(int j = 0; j < p.getWeaponCardsPlayed().size(); j++){
-                    BattlePoints = BattlePoints + p.getWeaponCardsPlayed().get(j).getMAXbattlepoints();
+                    BattlePoints += p.getWeaponCardsPlayed().get(j).getMAXbattlepoints();
                 }
-                BattlePoints = BattlePoints + p.getBattlePoints();
-//                playersPointsMap.put(p,BattlePoints);
+                BattlePoints += p.getBattlePoints();
+                //Add amour battlepoints
+                for(int j = 0; j < p.getAmours().size(); j++){
+                    BattlePoints += p.getAmours().get(j).getMAXbattlepoints();
+                }
+                //Todo deal with adding ally battlepoints
                 playersPointsMap.put(p,BattlePoints);
             }
             int maxValue = Collections.max(playersPointsMap.values());
@@ -172,14 +216,19 @@ public class TournamentService {
                 }
                 else{
                     removeWeaponCards(game,game.getTournamentPlayers().get(i));
+                    removeAmourCards(game, game.getTournamentPlayers().get(i));
                 }
             }
 
             //Check for 1 winner
             if(winners.size() == 1){
-                //give shields, draw new story card
+                //give shields, remove weapons and amours, draw new story card
                 winners.get(0).setShields(game.getCurrentStoryCard().getStages() + game.getNumOfTournamentPlayers());
                 removeWeaponCards(game,winners.get(0));
+                removeAmourCards(game, winners.get(0));
+                simpMessagingTemplate.convertAndSendToUser(winners.get(0).getName(),"/topic/cards-in-hand/"+gameId
+                        , winners.get(0).getCards());
+                //Todo check for winner
                 newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
             }
             //Check if multiple winners and if they need a tie-breaker
@@ -201,8 +250,10 @@ public class TournamentService {
             else{
                 for(Player p : winners){
                     removeWeaponCards(game,p);
+                    removeAmourCards(game,p);
                     p.setShields(game.getCurrentStoryCard().getStages() + game.getNumOfTournamentPlayers());
                 }
+                //Todo check for winner
                 newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
             }
         }
@@ -225,5 +276,11 @@ public class TournamentService {
         p.setWeaponCardsPlayed(new ArrayList<>());
     }
 
+    private void removeAmourCards(Game game, Player p){
+        for(Card c: p.getAmours()){
+            game.getAdventureDeck().discardCard(c);
+        }
+        p.setAmours(new ArrayList<>());
+    }
 
 }
