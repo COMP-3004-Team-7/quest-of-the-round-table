@@ -281,22 +281,68 @@ public class QuestService {
     public ResponseEntity submitCardAgainstFoe(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
         //Error checking (is card test or foe or any other nonplayable cards?)
         Game game = gameService.getGame(gameId);
-        if(request.getCard().getName().equals("Foe") || request.getCard().getName().equals("Test")){
+        if(request.getCard().getType().equals("Foe") || request.getCard().getType().equals("Test")){
             return ResponseEntity.badRequest().body("Must submit weapon/ally/amour");
         }
-
-        //Check for duplicate weapons
-        for(int i = 0; i < game.getPlayers().size(); i++){
-            if(game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
-                Player p = game.getPlayers().get(i);
-                for(int j = 0; j < p.getWeaponCardsPlayed().size(); j++){
-                    if(p.getWeaponCardsPlayed().get(j).getName().equals(request.getCard().getName())){
-                        return ResponseEntity.badRequest().body("Cannot submit duplicate weapons");
+        //If weapon submitted -> check for duplicates
+        if(request.getCard().getType().equals("Weapon")) {
+            for (int i = 0; i < game.getPlayers().size(); i++) {
+                if (game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())) {
+                    Player p = game.getPlayers().get(i);
+                    for (int j = 0; j < p.getWeaponCardsPlayed().size(); j++) {
+                        if (p.getWeaponCardsPlayed().get(j).getName().equals(request.getCard().getName())) {
+                            return ResponseEntity.badRequest().body("Cannot submit duplicate weapons");
+                        }
+                    }
+                    //Otherwise, all good and we add weapon card to players played cards
+                    for (int j = 0; j < p.getCards().size(); j++) {
+                        if (p.getCards().get(j).getName().equals(request.getCard().getName())) {
+                            Card c = p.getCards().remove(j);
+                            game.getQuestingPlayers().get(i).getWeaponCardsPlayed().add(c);
+                            simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
+                                    p.getName(), p.getCards());
+                            break;
+                        }
                     }
                 }
-                //Otherwise, all good and we add weapon card to players played cards
-                p.getWeaponCardsPlayed().add(request.getCard());
-                break;
+            }
+        }
+        //If Amour, check for amour cards (can only have 1 per quest)
+        if(request.getCard().getType().equals("Amour")) {
+            for (int i = 0; i < game.getQuestingPlayers().size(); i++) {
+                if (game.getQuestingPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())) {
+                    Player p = game.getQuestingPlayers().get(i);
+                    if(p.getAmours().size() == 1){
+                        return ResponseEntity.badRequest().body("Already have 1 Amour card. Cannot have more than 1 per Quest");
+                    }
+                    //All good if we get here -> add amour to arraylist
+                    for (int j = 0; j < p.getCards().size(); j++) {
+                        if (p.getCards().get(j).getName().equals(request.getCard().getName())) {
+                            Card c = p.getCards().remove(j);
+                            p.getAmours().add(c);
+                            simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
+                                    p.getName(), p.getCards());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        //If Ally, add to Ally array list
+        if(request.getCard().getType().equals("Ally")) {
+            for (int i = 0; i < game.getQuestingPlayers().size(); i++) {
+                if (game.getQuestingPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())) {
+                    Player p = game.getQuestingPlayers().get(i);
+                    for (int j = 0; j < p.getCards().size(); j++) {
+                        if (p.getCards().get(j).getName().equals(request.getCard().getName())) {
+                            Card c = p.getCards().remove(j);
+                            p.getAllies().add(c);
+                            simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
+                                    p.getName(), p.getCards());
+                            break;
+                        }
+                    }
+                }
             }
         }
 
@@ -325,9 +371,15 @@ public class QuestService {
         if(numbids >= request.getBid()){
             return ResponseEntity.badRequest().body("You need to bid higher than "+ numbids);
         }
-        if(request.getBid() > game.getQuestingPlayers().get(index).getCards().size()){
+        //Get amour bids as well
+        int bidLimit = game.getQuestingPlayers().get(index).getCards().size();
+        if(game.getQuestingPlayers().get(index).getAmours().size() == 1){
+            bidLimit += game.getQuestingPlayers().get(index).getAmours().get(0).getBids();
+        }
+        if(request.getBid() > bidLimit){
             return ResponseEntity.badRequest().body("The number of cards you bid is less than the number of cards you have ");
         }
+
         game.getQuestingPlayers().get(index).setBid(request.getBid());
         //Proceed quest by sending out appropriate messages
         questStageProceeder.setProceedQuestStageStrategy(new TestStageSubmitBidStrategy());
@@ -364,6 +416,8 @@ public class QuestService {
                     simpMessagingTemplate.convertAndSend("/topic/game-winner/" + gameId, p.getUsername() +" won the game!");
                 }
                 else {
+                    //Remove amour cards from player (end of quest) and draw new story card
+                    removeAmourCards(game, p);
                     newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
                 }
             }
@@ -449,5 +503,12 @@ public class QuestService {
             }
         }
         return numbids;
+    }
+
+    private void removeAmourCards(Game game, Player p){
+        for(Card c: p.getAmours()){
+            game.getAdventureDeck().discardCard(c);
+        }
+        p.setAmours(new ArrayList<>());
     }
 }

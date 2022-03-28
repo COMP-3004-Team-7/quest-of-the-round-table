@@ -40,6 +40,12 @@ public class FoeStageStrategy implements ProceedQuestStageStrategy{
                     weaponCardsPlayed += game.getQuestingPlayers().get(i).getWeaponCardsPlayed().get(i).getMAXbattlepoints();
                 }
                 int totalBattlePointsOfPlayer = weaponCardsPlayed + game.getQuestingPlayers().get(i).getBattlePoints();
+                //Add amour's if applies
+                if(game.getQuestingPlayers().get(i).getAmours().size() == 1) {
+                    totalBattlePointsOfPlayer +=  game.getQuestingPlayers().get(i).getAmours().get(0).getMAXbattlepoints();
+                }
+                //Todo Add Allies -> need some strategy pattern or something or algorithm to calculate
+
                 if(totalBattlePointsOfPlayer<foeStagePoints){
                     //THIS PLAYER IS ELIMINATED FROM THE QUEST -> REMOVED FROM THE QUESTINGPLAYERSLIST
                     //SEND SIMPMESSAGING TEMPLATE TO THE USER THAT HAVE BEEN REMOVED FROM THE LIST
@@ -59,6 +65,7 @@ public class FoeStageStrategy implements ProceedQuestStageStrategy{
                     game.setBonusShield(0);
                     game.getQuestingPlayers().get(i).setRank();
                     removeWeaponCards(game, game.getQuestingPlayers().get(i));
+                    removeAmourCards(game, game.getQuestingPlayers().get(i));
                     if(game.getQuestingPlayers().get(i).getRank().equals("Knight")){
                         winners.add(game.getQuestingPlayers().get(i));
                     }
@@ -83,6 +90,7 @@ public class FoeStageStrategy implements ProceedQuestStageStrategy{
                     newStoryCardDealer.dealWithNewStoryCard(game, simpMessagingTemplate);
                 }
             }
+            //Not last stage -> go to next stage
             else{
                 sendNextStageToQuestingPlayer(gameId, simpMessagingTemplate, game, stage);
             }
@@ -117,6 +125,13 @@ public class FoeStageStrategy implements ProceedQuestStageStrategy{
         p.setWeaponCardsPlayed(new ArrayList<>());
     }
 
+    private void removeAmourCards(Game game, Player p){
+        for(Card c: p.getAmours()){
+            game.getAdventureDeck().discardCard(c);
+        }
+        p.setAmours(new ArrayList<>());
+    }
+
     private void drawCardsForSponsor(Game game) {
         int numStages = game.getCurrentStoryCard().getStages();
         int numCardsPlayed = 0;
@@ -132,6 +147,10 @@ public class FoeStageStrategy implements ProceedQuestStageStrategy{
     }
 
     private void sendNextStageToQuestingPlayer(String gameId, SimpMessagingTemplate simpMessagingTemplate, Game game, int stage) {
+        //remove weapon cards
+        for (int i=0; i < game.getQuestingPlayers().size(); i++) {
+            removeWeaponCards(game, game.getQuestingPlayers().get(i));
+        }
         //Update players
         for (int i=0 ; i < game.getQuestingPlayers().size(); i++){
             game.getPlayers().get(i).setStatus("current");

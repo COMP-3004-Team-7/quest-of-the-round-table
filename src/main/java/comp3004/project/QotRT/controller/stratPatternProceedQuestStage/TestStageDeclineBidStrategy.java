@@ -6,6 +6,8 @@ import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import java.util.ArrayList;
+
 public class TestStageDeclineBidStrategy implements ProceedQuestStageStrategy{
     private final NewStoryCardDealer newStoryCardDealer = new NewStoryCardDealer();
 
@@ -23,7 +25,7 @@ public class TestStageDeclineBidStrategy implements ProceedQuestStageStrategy{
         //Check if this is the last person in the quest to submit their response to the test card
         if( index == game.getQuestingPlayers().size()-1 ){
             Player removedPlayer = game.getQuestingPlayers().remove(index);
-            //nobody left -> end quest, no rewards, pull new story card
+            //nobody left -> end quest, no rewards, pull new story card, discard amours and weapons
             if(game.getQuestingPlayers().size()==0){
                 drawCardsForSponsor(game);
                 //Put all cards in quest in discard pile
@@ -31,6 +33,10 @@ public class TestStageDeclineBidStrategy implements ProceedQuestStageStrategy{
                     for(int j = 0; j < game.getStage(i).size(); j++){
                         game.getAdventureDeck().discardCard(game.getStage(i).get(j));
                     }
+                }
+                for(int i = 0; i < game.getQuestingPlayers().size();i++){
+                    removeWeaponCards(game, game.getQuestingPlayers().get(i));
+                    removeAmourCards(game, game.getQuestingPlayers().get(i));
                 }
                 simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
                         game.getMainPlayer().getName(), game.getMainPlayer().getCards());
@@ -45,10 +51,12 @@ public class TestStageDeclineBidStrategy implements ProceedQuestStageStrategy{
                         game.getQuestingPlayers().get(0).getName(), game.getQuestingPlayers().get(0).getBid());
             }
         }
-        //Ask next person to bid, then remove this player from questing array
+        //Ask next person to bid, remove this players weapon and amour cards, then remove this player from questing array
         else{
             simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(index+1).getName(),
                     "/topic/play-against-test-stage/"+gameId, currentMaxBid);
+            removeWeaponCards(game, game.getQuestingPlayers().get(index));
+            removeAmourCards(game, game.getQuestingPlayers().get(index));
             game.getQuestingPlayers().remove(index);
         }
     }
@@ -82,5 +90,19 @@ public class TestStageDeclineBidStrategy implements ProceedQuestStageStrategy{
             Card card = game.getAdventureDeck().drawCard();
             game.getMainPlayer().getCards().add(card);
         }
+    }
+
+    private void removeWeaponCards(Game game, Player p){
+        for(Card c: p.getWeaponCardsPlayed()){
+            game.getAdventureDeck().discardCard(c);
+        }
+        p.setWeaponCardsPlayed(new ArrayList<>());
+    }
+
+    private void removeAmourCards(Game game, Player p){
+        for(Card c: p.getAmours()){
+            game.getAdventureDeck().discardCard(c);
+        }
+        p.setAmours(new ArrayList<>());
     }
 }

@@ -12,6 +12,7 @@ public class Player implements Principal {
     private ArrayList<Card> cards;
     private String status;
     private ArrayList<Card> weaponCardsPlayed;
+    private ArrayList<Card> amours;
     private ArrayList<Card> allies;
     private Integer battlePoints;
     private Integer shields;
@@ -22,6 +23,7 @@ public class Player implements Principal {
         cards = new ArrayList<>();
         weaponCardsPlayed = new ArrayList<>();
         allies = new ArrayList<>();
+        amours = new ArrayList<>();
         playerNumber = 0;
         status = "current";
         battlePoints = 5;
@@ -35,6 +37,7 @@ public class Player implements Principal {
         cards = new ArrayList<>();
         weaponCardsPlayed = new ArrayList<>();
         allies = new ArrayList<>();
+        amours = new ArrayList<>();
         playerNumber = 0;
         status = "current";
         battlePoints = 5;
@@ -47,6 +50,7 @@ public class Player implements Principal {
         cards = new ArrayList<>();
         weaponCardsPlayed = new ArrayList<>();
         allies = new ArrayList<>();
+        amours = new ArrayList<>();
         this.username = username;
         this.playerNumber = playerNumber;
         battlePoints = 5;
@@ -59,6 +63,7 @@ public class Player implements Principal {
         cards = new ArrayList<>();
         weaponCardsPlayed = new ArrayList<>();
         allies = new ArrayList<>();
+        amours = new ArrayList<>();
         this.username = username;
         this.principalName = principalName;
         this.playerNumber = playerNumber;
@@ -66,6 +71,14 @@ public class Player implements Principal {
         shields = 0;
         rank = "Squire";
         bid = 0;
+    }
+
+    public ArrayList<Card> getAmours() {
+        return amours;
+    }
+
+    public void setAmours(ArrayList<Card> amours) {
+        this.amours = amours;
     }
 
     public ArrayList<Card> getAllies() {
