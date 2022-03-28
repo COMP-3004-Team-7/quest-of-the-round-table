@@ -2,10 +2,7 @@ package comp3004.project.QotRT.service;
 
 import comp3004.project.QotRT.cards.Card;
 import comp3004.project.QotRT.cards.StoryCard;
-import comp3004.project.QotRT.controller.dto.ConnectRequest;
-import comp3004.project.QotRT.controller.dto.SelectSponsorCardRequest;
-import comp3004.project.QotRT.controller.dto.SubmitBidRequest;
-import comp3004.project.QotRT.controller.dto.SubmitStageRequest;
+import comp3004.project.QotRT.controller.dto.*;
 import comp3004.project.QotRT.controller.stratPatternNewStory.NewStoryCardDealer;
 import comp3004.project.QotRT.controller.stratPatternProceedQuestStage.FoeStageStrategy;
 import comp3004.project.QotRT.controller.stratPatternProceedQuestStage.QuestStageProceeder;
@@ -132,7 +129,7 @@ public class QuestService {
 
 
     public ResponseEntity submitSponsorStage(String gameId, SubmitStageRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
-        //Check if current stage is greater than all previous stages battlepoints
+
         Boolean isBigger = true;
         Game game = gameService.getGame(gameId);
         //Check if current stage is greater than all previous stages battlepoints
@@ -207,6 +204,24 @@ public class QuestService {
                 Card card = game.getAdventureDeck().drawCard();
                 game.getQuestingPlayers().get(i).getCards().add(card);
                 game.getQuestingPlayers().get(i).setStatus("current");
+
+                simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
+                        "/topic/cards-in-hand/"+gameId, game.getQuestingPlayers().get(i).getCards());
+                if(game.getStage(1).get(0).getType().equals("Foe")) {
+                    simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
+                            "/topic/play-against-quest-stage/" + gameId, game.getStage(1).get(0).getType());
+                }else{
+                    if(i ==0) {
+                        simpMessagingTemplate.convertAndSendToUser(game.getQuestingPlayers().get(i).getName(),
+                                "/topic/play-against-test-stage/" + gameId, game.getStage(1).get(0).getType());
+                    }
+                }
+
+
+                simpMessagingTemplate.convertAndSend("/topic/play-against-quest-stage/"+gameId+"/"+
+                        game.getQuestingPlayers().get(i).getName(), game.getStage(1).get(0).getType());
+                simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
+                        game.getQuestingPlayers().get(i).getName(), game.getQuestingPlayers().get(i).getCards());
 
             }
         }
@@ -371,16 +386,9 @@ public class QuestService {
     //HELPER METHODS
 
     private void sendNextStageToQuestingPlayer(String gameId, SimpMessagingTemplate simpMessagingTemplate, Game game, int stage) {
-        //Update players (everyone except main player gets set to current)
-        for(int i = 0; i < game.getPlayers().size();i++){
-            if(game.getPlayers().get(i).equals(game.getMainPlayer())){
-                game.getPlayers().get(i).setStatus("waiting");
-            }
-            else{
-                game.getPlayers().get(i).setStatus("current");
-            }
-        }
+        //Update players
         for (int i=0 ; i < game.getQuestingPlayers().size(); i++){
+            game.getPlayers().get(i).setStatus("current");
             Card card = game.getAdventureDeck().drawCard();
             game.getQuestingPlayers().get(i).getCards().add(card);
             simpMessagingTemplate.convertAndSend("/topic/play-against-quest-stage/"+gameId+"/"+
