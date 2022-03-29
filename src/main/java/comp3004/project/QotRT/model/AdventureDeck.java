@@ -1,9 +1,6 @@
 package comp3004.project.QotRT.model;
 
-import comp3004.project.QotRT.cards.Card;
-import comp3004.project.QotRT.cards.FoeCardFactory;
-import comp3004.project.QotRT.cards.TestCardFactory;
-import comp3004.project.QotRT.cards.WeaponCardFactory;
+import comp3004.project.QotRT.cards.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +28,7 @@ public class AdventureDeck {
     private static final Integer numBoar = 4;
     private static final Integer numThieves = 8;
     private static final Integer numTests = 2;
+    private static final Integer numAmour = 8;
 
 
     public AdventureDeck(){
@@ -105,6 +103,13 @@ public class AdventureDeck {
             deck.add(testcardfactory.createCard("Test of Morghan Le Fey"));
             deck.add(testcardfactory.createCard("Test of Questing Beast"));
         }
+
+        AmourCardFactory amourcardfactory = new AmourCardFactory();
+        //Amour cards
+        for(int i = 0; i < numAmour; i++){
+            deck.add(amourcardfactory.createCard("Amour"));
+        }
+
 
         return this;
     }

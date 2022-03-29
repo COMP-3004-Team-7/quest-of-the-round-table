@@ -76,6 +76,11 @@ public class Deck {
                 cardList.add(new TestQuestingBeast());
             }
         }
-        return cardList;
+        //adding amour cards to the adventure cards
+        for (int i = 0; i<8 ; i++) {
+            cardList.add(new Amour());
+        }
+
+            return cardList;
     }
 }
