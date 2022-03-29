@@ -70,7 +70,7 @@ public class QuestService {
 
         if(game.getStage(request.getStage()).isEmpty()){
             if(!request.getCard().getType().equals("Foe") && (!request.getCard().getType().equals("Test"))){
-                return ResponseEntity.badRequest().body("Must submit Foe Card or Test First ");
+                return ResponseEntity.badRequest().body("Must submit Foe Card or Test First");
             }
             //Check if this is only test card in quest
             if(request.getCard().getType().equals("Test")){
@@ -133,10 +133,10 @@ public class QuestService {
         Game game = gameService.getGame(gameId);
         //Check if current stage is greater than all previous stages battlepoints
         if(game.getStage(request.getStage()).get(0).getType().equals("Foe")) {
-            int numStages = game.getCurrentStoryCard().getStages();
+            //int numStages = game.getCurrentStoryCard().getStages();
             int totalBattlePointsInSubmittedStage = getBattlePointsOfStage(game, request.getStage());
 
-            for (int i = 1; i < numStages + 1; i++) {
+            for (int i = 1; i < request.getStage() + 1; i++) {
                 if (game.getStage(i).get(0).getType().equals("Foe")) {
                     int totalBattlePointsInStage = getBattlePointsOfStage(game, i);
                     if (totalBattlePointsInStage > totalBattlePointsInSubmittedStage) {
@@ -286,9 +286,9 @@ public class QuestService {
         }
         //If weapon submitted -> check for duplicates
         if(request.getCard().getType().equals("Weapon")) {
-            for (int i = 0; i < game.getPlayers().size(); i++) {
-                if (game.getPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())) {
-                    Player p = game.getPlayers().get(i);
+            for (int i = 0; i < game.getQuestingPlayers().size(); i++) {
+                if (game.getQuestingPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())) {
+                    Player p = game.getQuestingPlayers().get(i);
                     for (int j = 0; j < p.getWeaponCardsPlayed().size(); j++) {
                         if (p.getWeaponCardsPlayed().get(j).getName().equals(request.getCard().getName())) {
                             return ResponseEntity.badRequest().body("Cannot submit duplicate weapons");
@@ -298,7 +298,7 @@ public class QuestService {
                     for (int j = 0; j < p.getCards().size(); j++) {
                         if (p.getCards().get(j).getName().equals(request.getCard().getName())) {
                             Card c = p.getCards().remove(j);
-                            game.getQuestingPlayers().get(i).getWeaponCardsPlayed().add(c);
+                            p.getWeaponCardsPlayed().add(c);
                             simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
                                     p.getName(), p.getCards());
                             break;

@@ -139,7 +139,7 @@ public class FoeStageStrategy implements ProceedQuestStageStrategy{
     private void drawCardsForSponsor(Game game) {
         int numStages = game.getCurrentStoryCard().getStages();
         int numCardsPlayed = 0;
-        for(int i = 0; i < numStages; i++){
+        for(int i = 1; i < numStages + 1; i++){
             for(int j = 0; j < game.getStage(i).size(); j++){
                 numCardsPlayed++;
             }
