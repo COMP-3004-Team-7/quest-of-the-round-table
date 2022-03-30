@@ -80,6 +80,20 @@ public class Deck {
         for (int i = 0; i<8 ; i++) {
             cardList.add(new Amour());
         }
+        //adding ally cards to the adventure card
+        for (int i = 0; i<1 ; i++) {
+            cardList.add(new KingArthur());
+            cardList.add(new KingPellionore());
+            cardList.add(new Merlin());
+            cardList.add(new QueenGuinevere());
+            cardList.add(new QueenIseult());
+            cardList.add(new SirPercival());
+            cardList.add(new SirTristan());
+            cardList.add(new SirGawain());
+            cardList.add(new SirGalahad());
+            cardList.add(new SirLancelot());
+        }
+
 
             return cardList;
     }

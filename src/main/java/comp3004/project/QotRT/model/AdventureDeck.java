@@ -27,8 +27,12 @@ public class AdventureDeck {
     private static final Integer numSaxons = 5;
     private static final Integer numBoar = 4;
     private static final Integer numThieves = 8;
+    //test cards
     private static final Integer numTests = 2;
+    //amour cards
     private static final Integer numAmour = 8;
+    //ally cards
+    private static final Integer numAlly = 10;
 
 
     public AdventureDeck(){
@@ -109,6 +113,22 @@ public class AdventureDeck {
         for(int i = 0; i < numAmour; i++){
             deck.add(amourcardfactory.createCard("Amour"));
         }
+
+        AllyCardFactory allycardfactory = new AllyCardFactory();
+        //Ally card
+        for(int i = 0; i < numAlly; i++){
+            deck.add(allycardfactory.createCard("Queen Iseult"));
+            deck.add(allycardfactory.createCard("Merlin"));
+            deck.add(allycardfactory.createCard("Sir Galahad"));
+            deck.add(allycardfactory.createCard("Sir Lancelot"));
+            deck.add(allycardfactory.createCard("Sir Tristan"));
+            deck.add(allycardfactory.createCard("Sir Percival"));
+            deck.add(allycardfactory.createCard("Sir Gawain"));
+            deck.add(allycardfactory.createCard("Queen Guinevere"));
+            deck.add(allycardfactory.createCard("King Arthur"));
+            deck.add(allycardfactory.createCard("King Pellionore"));
+        }
+
 
 
         return this;
