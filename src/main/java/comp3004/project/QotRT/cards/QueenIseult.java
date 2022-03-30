@@ -5,7 +5,7 @@ public class QueenIseult extends Card{
         this.bids = 2;
         this.MINbattlepoints = 0;
         this.MAXbattlepoints = 0;
-        this.name = "4 bids when Tristan is in play";
+        this.name = "Queen iseult";
         this.type = "Ally";
     }
 }

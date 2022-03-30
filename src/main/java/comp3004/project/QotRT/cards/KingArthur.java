@@ -5,7 +5,7 @@ public class KingArthur extends Card{
         this.bids = 2;
         this.MINbattlepoints = 10;
         this.MAXbattlepoints = 10;
-        this.name = "";
+        this.name = "King Arthur";
         this.type = "Ally";
     }
 }

@@ -5,7 +5,7 @@ public class QueenGuinevere extends Card{
         this.bids = 3;
         this.MINbattlepoints = 0;
         this.MAXbattlepoints = 0;
-        this.name = "";
+        this.name = "Queen Guinevere";
         this.type = "Ally";
     }
 }

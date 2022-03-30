@@ -5,7 +5,7 @@ public class SirPercival extends Card{
         this.bids = 0;
         this.MINbattlepoints = 5;
         this.MAXbattlepoints = 5;
-        this.name = "+20 on the search for the Holy Grail Quest";
+        this.name = "Sir Percival";
         this.type = "Ally";
     }
 }

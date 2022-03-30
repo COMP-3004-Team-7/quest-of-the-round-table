@@ -5,7 +5,7 @@ public class SirTristan extends Card{
         this.bids = 0;
         this.MINbattlepoints = 10;
         this.MAXbattlepoints = 10;
-        this.name = "+20 when Queen Iseult is in play";
+        this.name = "Sir Tristan";
         this.type = "Ally";
     }
 }

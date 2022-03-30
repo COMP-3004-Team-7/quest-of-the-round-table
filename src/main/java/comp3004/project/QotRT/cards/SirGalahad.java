@@ -5,7 +5,7 @@ public class SirGalahad extends Card{
         this.bids = 0;
         this.MINbattlepoints = 15;
         this.MAXbattlepoints = 15;
-        this.name = "";//has no decription
+        this.name = "Sir Galahad";
         this.type = "Ally";
     }
 }

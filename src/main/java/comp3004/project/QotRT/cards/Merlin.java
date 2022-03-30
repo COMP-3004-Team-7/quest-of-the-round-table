@@ -5,7 +5,7 @@ public class Merlin extends Card{
         this.bids = 0;
         this.MINbattlepoints = 0;
         this.MAXbattlepoints = 0;
-        this.name = "Player may preview any one stage per Quest";
+        this.name = "Merlin";
         this.type = "Ally";
     }
 }
