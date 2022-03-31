@@ -361,7 +361,7 @@ public class QuestService {
 
     public ResponseEntity submitBid(String gameId, SubmitBidRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
         Game game = gameService.getGame(gameId);
-        int numbids = getCurrentMaxBid(game, request.getStage());
+        int numbids = getCurrentMaxBid(game, request.getStage())-1;
         int index = 0;
         for(int i = 0; i < game.getQuestingPlayers().size();i++){
             if(game.getQuestingPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
