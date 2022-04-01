@@ -405,6 +405,8 @@ public class QuestService {
         for(int j = 0; j < game.getQuestingPlayers().get(0).getCards().size(); j++){
             if(game.getQuestingPlayers().get(0).getCards().get(j).getName().equals(request.getCard().getName())){
                 game.getQuestingPlayers().get(0).getCards().remove(j);
+                simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
+                        game.getQuestingPlayers().get(0).getName(), game.getQuestingPlayers().get(0).getCards());
                 break;
             }
         }
