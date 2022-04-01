@@ -377,7 +377,7 @@ public class QuestService {
             bidLimit += game.getQuestingPlayers().get(index).getAmours().get(0).getBids();
         }
         if(request.getBid() > bidLimit){
-            return ResponseEntity.badRequest().body("The number of cards you bid is less than the number of cards you have ");
+            return ResponseEntity.badRequest().body("You cannot bid over your bid limit (check number of cards in hand)");
         }
 
         game.getQuestingPlayers().get(index).setBid(request.getBid());
@@ -400,8 +400,14 @@ public class QuestService {
     public ResponseEntity discardForTestCard(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
         Game game = gameService.getGame(gameId);
 
-        //Subtract 1 from players bid (card to discard essentially)
+        //Subtract 1 from players bid (card to discard essentially) and discard the card
         game.getQuestingPlayers().get(0).setBid(game.getQuestingPlayers().get(0).getBid()-1);
+        for(int j = 0; j < game.getQuestingPlayers().get(0).getCards().size(); j++){
+            if(game.getQuestingPlayers().get(0).getCards().get(j).getName().equals(request.getCard().getName())){
+                game.getQuestingPlayers().get(0).getCards().remove(j);
+                break;
+            }
+        }
         //Check if they need to discard more or not
         if(game.getQuestingPlayers().get(0).getBid() > 0){
             return ResponseEntity.ok().body("Discarded a card to fulfill bid, you must discard " + game.getQuestingPlayers().get(0).getBid() + " more cards.");
