@@ -126,7 +126,7 @@ public class AdventureDeck {
             deck.add(allycardfactory.createCard("Sir Gawain"));
             deck.add(allycardfactory.createCard("Queen Guinevere"));
             deck.add(allycardfactory.createCard("King Arthur"));
-            deck.add(allycardfactory.createCard("King Pellionore"));
+            deck.add(allycardfactory.createCard("King Pellinore"));
         }
 
 

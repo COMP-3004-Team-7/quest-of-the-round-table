@@ -83,7 +83,7 @@ public class Deck {
         //adding ally cards to the adventure card
         for (int i = 0; i<1 ; i++) {
             cardList.add(new KingArthur());
-            cardList.add(new KingPellionore());
+            cardList.add(new KingPellinore());
             cardList.add(new Merlin());
             cardList.add(new QueenGuinevere());
             cardList.add(new QueenIseult());
@@ -95,6 +95,6 @@ public class Deck {
         }
 
 
-            return cardList;
+        return cardList;
     }
 }

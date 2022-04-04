@@ -29,8 +29,8 @@ public class AllyCardFactory extends AdventureCardFactory{
         else if (item.equals("King Arthur")){
             return new KingArthur();
         }
-        else if (item.equals("King Pellionore")){
-            return new KingPellionore();
+        else if (item.equals("King Pellinore")){
+            return new KingPellinore();
         }
         else {
             return null;

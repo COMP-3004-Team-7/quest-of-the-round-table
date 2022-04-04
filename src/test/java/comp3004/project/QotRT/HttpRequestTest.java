@@ -10,6 +10,8 @@ import comp3004.project.QotRT.controller.dto.ConnectRequest;
 import comp3004.project.QotRT.controller.dto.SelectSponsorCardRequest;
 import comp3004.project.QotRT.controller.dto.SubmitBidRequest;
 import comp3004.project.QotRT.controller.dto.SubmitStageRequest;
+import comp3004.project.QotRT.controller.stratPatternBattlePoints.AllyBattlePointsOrBidsStrategy;
+import comp3004.project.QotRT.controller.stratPatternBattlePoints.BattlePointsOrBidsReceiver;
 import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
 import comp3004.project.QotRT.service.GameService;
@@ -20,12 +22,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 //NOTE -> Some tests might fail, but that is because the story cards are automatically drawn at the end, and might effect
 //the number of shields players have (ex: an event card that gives or removes shields from players) that is fine.
@@ -37,6 +42,7 @@ class QotRtQuestTests {
 	@Autowired
 	private MockMvc mockMvc;
 	private final GameService gameService = new GameService();
+    private final BattlePointsOrBidsReceiver battlePointsOrBidsReceiver = new BattlePointsOrBidsReceiver();
 
 	//Test that person who sponsors quest is changed to main player
 	@Test
@@ -1760,13 +1766,6 @@ class QotRtQuestTests {
 						.accept(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk()).andReturn();
 
-		//Set story card to enchanted forest before game starts
-		Game game = gameService.getGame(gameId);
-		QuestCardFactory questCardFactory = new QuestCardFactory();
-		StoryCard storyCard = questCardFactory.createCard("Journey through the Enchanted Forest");
-		ArrayList<StoryCard> storyDeck = game.getStoryDeck().getDeck();
-		storyDeck.add(storyCard);
-		game.getStoryDeck().setDeck(storyDeck);
 
 		//Start the game (p2 starts it)
 		mockMvc.perform(post("/game/play-game?gameId="+gameId)
@@ -1775,6 +1774,12 @@ class QotRtQuestTests {
 						.accept(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk()).andReturn();
 
+		//Set story card to enchanted forest
+		Game game = gameService.getGame(gameId);
+		QuestCardFactory questCardFactory = new QuestCardFactory();
+		StoryCard storyCard = questCardFactory.createCard("Journey through the Enchanted Forest");
+		game.setCurrentStoryCard(storyCard);
+		game.setBonusShield(0);
 
 
 		//p2 accepts to sponsor quest card
@@ -1964,6 +1969,1727 @@ class QotRtQuestTests {
 		}
 
 		Assertions.assertEquals("Knight", game.getPlayers().get(0).getRank());
+	}
+
+    //Test Sir Gawain Battle Points on non special quest
+    @Test
+    void sirGawainTest() throws Exception{
+        //Creating the ObjectMapper object
+        ObjectMapper mapper = new ObjectMapper();
+
+        //Creating players
+        Player p1 = new Player("John","19203391912",0);
+        Player p2 = new Player("Tim","12930494592",0);
+        //Converting the Player to JSONString
+        String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+        MvcResult result = mockMvc.perform(post("/game/start")
+                        .content(jsonPlayer1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //Get Result, convert to JSON and get gameId
+        String actualJson = result.getResponse().getContentAsString();
+        JSONObject gameJSONobj = new JSONObject(actualJson);
+        String gameId = gameJSONobj.getString("gameId");
+
+
+        //Connect another player to the game
+        ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+        String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+        mockMvc.perform(post("/game/connect")
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //Start the game (p2 starts it)
+        mockMvc.perform(post("/game/play-game?gameId="+gameId)
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //Set story card to enchanted forest -> give it 2 bonus shields
+        Game game = gameService.getGame(gameId);
+        QuestCardFactory questCardFactory = new QuestCardFactory();
+        StoryCard storyCard = questCardFactory.createCard("Journey through the Enchanted Forest");
+        game.setCurrentStoryCard(storyCard);
+
+        //p2 accepts to sponsor quest card
+        mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        for(int i = 0; i < game.getCurrentStoryCard().getStages(); i++){
+            //p2 submits foe card
+            FoeCardFactory foeCardFactory = new FoeCardFactory();
+            Card card1 = foeCardFactory.createCard("Boar");
+            game.getMainPlayer().getCards().add(card1);
+            SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+            String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+            mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+                            .content(jsonSponsorCardRequest1)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk()).andReturn();
+
+            SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+            String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+            //p2 submits completed stage
+            mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+                            .content(jsonSubmitStageRequest)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk()).andReturn();
+        }
+
+        //p1 joins quest
+        connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+        jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+        mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //p1 submits ally against foe
+        AllyCardFactory allyCardFactory = new AllyCardFactory();
+        Card card1 = allyCardFactory.createCard("Sir Gawain");
+        game.getPlayers().get(0).getCards().add(card1);
+        SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card1,1);
+        String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+        mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+                        .content(jsonSponsorCardRequest1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+        int actualBattlePoints = battlePointsOrBidsReceiver.receiveBattlePoints(game, null, game.getPlayers().get(0));
+
+        Assertions.assertEquals(10, actualBattlePoints);
+    }
+
+    //Test Sir Gawain Battle Points on Green Knight Quest
+    @Test
+    void sirGawainTestSpecialQuest() throws Exception{
+        //Creating the ObjectMapper object
+        ObjectMapper mapper = new ObjectMapper();
+
+        //Creating players
+        Player p1 = new Player("John","19203391912",0);
+        Player p2 = new Player("Tim","12930494592",0);
+        //Converting the Player to JSONString
+        String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+        MvcResult result = mockMvc.perform(post("/game/start")
+                        .content(jsonPlayer1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //Get Result, convert to JSON and get gameId
+        String actualJson = result.getResponse().getContentAsString();
+        JSONObject gameJSONobj = new JSONObject(actualJson);
+        String gameId = gameJSONobj.getString("gameId");
+
+
+        //Connect another player to the game
+        ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+        String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+        mockMvc.perform(post("/game/connect")
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //Start the game (p2 starts it)
+        mockMvc.perform(post("/game/play-game?gameId="+gameId)
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //Set story card to enchanted forest -> give it 2 bonus shields
+        Game game = gameService.getGame(gameId);
+        QuestCardFactory questCardFactory = new QuestCardFactory();
+        StoryCard storyCard = questCardFactory.createCard("Test of the Green Knight");
+        game.setCurrentStoryCard(storyCard);
+
+        //p2 accepts to sponsor quest card
+        mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        for(int i = 0; i < game.getCurrentStoryCard().getStages(); i++){
+            //p2 submits foe card
+            FoeCardFactory foeCardFactory = new FoeCardFactory();
+            Card card1 = foeCardFactory.createCard("Boar");
+            game.getMainPlayer().getCards().add(card1);
+            SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+            String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+            mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+                            .content(jsonSponsorCardRequest1)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk()).andReturn();
+
+            SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+            String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+            //p2 submits completed stage
+            mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+                            .content(jsonSubmitStageRequest)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk()).andReturn();
+        }
+
+        //p1 joins quest
+        connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+        jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+        mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //p1 submits ally against foe
+        AllyCardFactory allyCardFactory = new AllyCardFactory();
+        Card card1 = allyCardFactory.createCard("Sir Gawain");
+        game.getPlayers().get(0).getCards().add(card1);
+        SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card1,1);
+        String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+        mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+                        .content(jsonSponsorCardRequest1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+        int actualBattlePoints = battlePointsOrBidsReceiver.receiveBattlePoints(game, null, game.getPlayers().get(0));
+
+        Assertions.assertEquals(30, actualBattlePoints);
+    }
+
+    //Test King Pellinore Battle Points on any quest
+    @Test
+    void kingPellinoreTest() throws Exception{
+        //Creating the ObjectMapper object
+        ObjectMapper mapper = new ObjectMapper();
+
+        //Creating players
+        Player p1 = new Player("John","19203391912",0);
+        Player p2 = new Player("Tim","12930494592",0);
+        //Converting the Player to JSONString
+        String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+        MvcResult result = mockMvc.perform(post("/game/start")
+                        .content(jsonPlayer1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //Get Result, convert to JSON and get gameId
+        String actualJson = result.getResponse().getContentAsString();
+        JSONObject gameJSONobj = new JSONObject(actualJson);
+        String gameId = gameJSONobj.getString("gameId");
+
+
+        //Connect another player to the game
+        ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+        String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+        mockMvc.perform(post("/game/connect")
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //Start the game (p2 starts it)
+        mockMvc.perform(post("/game/play-game?gameId="+gameId)
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //Set story card to enchanted forest -> give it 2 bonus shields
+        Game game = gameService.getGame(gameId);
+        QuestCardFactory questCardFactory = new QuestCardFactory();
+        StoryCard storyCard = questCardFactory.createCard("Test of the Green Knight");
+        game.setCurrentStoryCard(storyCard);
+
+        //p2 accepts to sponsor quest card
+        mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        for(int i = 0; i < game.getCurrentStoryCard().getStages(); i++){
+            //p2 submits foe card
+            FoeCardFactory foeCardFactory = new FoeCardFactory();
+            Card card1 = foeCardFactory.createCard("Boar");
+            game.getMainPlayer().getCards().add(card1);
+            SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+            String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+            mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+                            .content(jsonSponsorCardRequest1)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk()).andReturn();
+
+            SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+            String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+            //p2 submits completed stage
+            mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+                            .content(jsonSubmitStageRequest)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk()).andReturn();
+        }
+
+        //p1 joins quest
+        connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+        jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+        mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //p1 submits ally against foe
+        AllyCardFactory allyCardFactory = new AllyCardFactory();
+        Card card1 = allyCardFactory.createCard("King Pellinore");
+        game.getPlayers().get(0).getCards().add(card1);
+        SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card1,1);
+        String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+        mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+                        .content(jsonSponsorCardRequest1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+        int actualBattlePoints = battlePointsOrBidsReceiver.receiveBattlePoints(game, null, game.getPlayers().get(0));
+
+        Assertions.assertEquals(10, actualBattlePoints);
+    }
+
+    //Test King Pellinore bids on questing beast quest
+    @Test
+    void kingPellinoreTestSpecialQuest() throws Exception{
+        //Creating the ObjectMapper object
+        ObjectMapper mapper = new ObjectMapper();
+
+        //Creating players
+        Player p1 = new Player("John","19203391912",0);
+        Player p2 = new Player("Tim","12930494592",0);
+        //Converting the Player to JSONString
+        String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+        MvcResult result = mockMvc.perform(post("/game/start")
+                        .content(jsonPlayer1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //Get Result, convert to JSON and get gameId
+        String actualJson = result.getResponse().getContentAsString();
+        JSONObject gameJSONobj = new JSONObject(actualJson);
+        String gameId = gameJSONobj.getString("gameId");
+
+
+        //Connect another player to the game
+        ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+        String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+        mockMvc.perform(post("/game/connect")
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //Start the game (p2 starts it)
+        mockMvc.perform(post("/game/play-game?gameId="+gameId)
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //Set story card to enchanted forest -> give it 2 bonus shields
+        Game game = gameService.getGame(gameId);
+        QuestCardFactory questCardFactory = new QuestCardFactory();
+        StoryCard storyCard = questCardFactory.createCard("Search for the Questing Beast");
+        game.setCurrentStoryCard(storyCard);
+
+        //p2 accepts to sponsor quest card
+        mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        for(int i = 0; i < game.getCurrentStoryCard().getStages(); i++){
+            //p2 submits foe card
+            FoeCardFactory foeCardFactory = new FoeCardFactory();
+            Card card1 = foeCardFactory.createCard("Boar");
+            game.getMainPlayer().getCards().add(card1);
+            SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+            String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+            mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+                            .content(jsonSponsorCardRequest1)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk()).andReturn();
+
+            SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+            String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+            //p2 submits completed stage
+            mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+                            .content(jsonSubmitStageRequest)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk()).andReturn();
+        }
+
+        //p1 joins quest
+        connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+        jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+        mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+                        .content(jsonConnectRequest)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        //p1 submits ally against foe
+        AllyCardFactory allyCardFactory = new AllyCardFactory();
+        Card card1 = allyCardFactory.createCard("King Pellinore");
+        game.getPlayers().get(0).getCards().add(card1);
+        SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card1,1);
+        String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+        mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+                        .content(jsonSponsorCardRequest1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andReturn();
+
+        battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+        int actualBids = battlePointsOrBidsReceiver.receiveBids(game, null, game.getPlayers().get(0));
+
+        Assertions.assertEquals(4, actualBids);
+    }
+
+	//Test Sir Percival battle points on non special quest
+	@Test
+	void sirPercivalTest() throws Exception{
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p2 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card to enchanted forest
+		Game game = gameService.getGame(gameId);
+		QuestCardFactory questCardFactory = new QuestCardFactory();
+		StoryCard storyCard = questCardFactory.createCard("Search for the Questing Beast");
+		game.setCurrentStoryCard(storyCard);
+
+		//p2 accepts to sponsor quest card
+		mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		for(int i = 0; i < game.getCurrentStoryCard().getStages(); i++){
+			//p2 submits foe card
+			FoeCardFactory foeCardFactory = new FoeCardFactory();
+			Card card1 = foeCardFactory.createCard("Boar");
+			game.getMainPlayer().getCards().add(card1);
+			SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+			String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+			mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+			String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+			//p2 submits completed stage
+			mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+							.content(jsonSubmitStageRequest)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+		}
+
+		//p1 joins quest
+		connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p1 submits ally against foe
+		AllyCardFactory allyCardFactory = new AllyCardFactory();
+		Card card1 = allyCardFactory.createCard("Sir Percival");
+		game.getPlayers().get(0).getCards().add(card1);
+		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card1,1);
+		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+		int actualBattlePoints = battlePointsOrBidsReceiver.receiveBattlePoints(game, null, game.getPlayers().get(0));
+
+		Assertions.assertEquals(5, actualBattlePoints);
+	}
+
+	//Test Sir Percival battle points on special quest
+	@Test
+	void sirPercivalTestSpecialQuest() throws Exception{
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p2 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card to enchanted forest
+		Game game = gameService.getGame(gameId);
+		QuestCardFactory questCardFactory = new QuestCardFactory();
+		StoryCard storyCard = questCardFactory.createCard("Search for the Holy Grail");
+		game.setCurrentStoryCard(storyCard);
+
+		//p2 accepts to sponsor quest card
+		mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		for(int i = 0; i < game.getCurrentStoryCard().getStages(); i++){
+			//p2 submits foe card
+			FoeCardFactory foeCardFactory = new FoeCardFactory();
+			Card card1 = foeCardFactory.createCard("Boar");
+			game.getMainPlayer().getCards().add(card1);
+			SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+			String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+			mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+			String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+			//p2 submits completed stage
+			mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+							.content(jsonSubmitStageRequest)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+		}
+
+		//p1 joins quest
+		connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p1 submits ally against foe
+		AllyCardFactory allyCardFactory = new AllyCardFactory();
+		Card card1 = allyCardFactory.createCard("Sir Percival");
+		game.getPlayers().get(0).getCards().add(card1);
+		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card1,1);
+		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+		int actualBattlePoints = battlePointsOrBidsReceiver.receiveBattlePoints(game, null, game.getPlayers().get(0));
+
+		Assertions.assertEquals(25, actualBattlePoints);
+	}
+
+	//Test Sir Lancelot battle points on non special quest
+	@Test
+	void sirLancelotTest() throws Exception{
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p2 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card to enchanted forest
+		Game game = gameService.getGame(gameId);
+		QuestCardFactory questCardFactory = new QuestCardFactory();
+		StoryCard storyCard = questCardFactory.createCard("Search for the Holy Grail");
+		game.setCurrentStoryCard(storyCard);
+
+		//p2 accepts to sponsor quest card
+		mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		for(int i = 0; i < game.getCurrentStoryCard().getStages(); i++){
+			//p2 submits foe card
+			FoeCardFactory foeCardFactory = new FoeCardFactory();
+			Card card1 = foeCardFactory.createCard("Boar");
+			game.getMainPlayer().getCards().add(card1);
+			SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+			String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+			mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+			String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+			//p2 submits completed stage
+			mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+							.content(jsonSubmitStageRequest)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+		}
+
+		//p1 joins quest
+		connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p1 submits ally against foe
+		AllyCardFactory allyCardFactory = new AllyCardFactory();
+		Card card1 = allyCardFactory.createCard("Sir Lancelot");
+		game.getPlayers().get(0).getCards().add(card1);
+		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card1,1);
+		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+		int actualBattlePoints = battlePointsOrBidsReceiver.receiveBattlePoints(game, null, game.getPlayers().get(0));
+
+		Assertions.assertEquals(15, actualBattlePoints);
+	}
+
+	//Test Sir Lancelot battle points on special quest
+	@Test
+	void sirLancelotTestSpecialQuest() throws Exception{
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p2 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card to enchanted forest
+		Game game = gameService.getGame(gameId);
+		QuestCardFactory questCardFactory = new QuestCardFactory();
+		StoryCard storyCard = questCardFactory.createCard("Defend the Queen's Honor");
+		game.setCurrentStoryCard(storyCard);
+
+		//p2 accepts to sponsor quest card
+		mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		for(int i = 0; i < game.getCurrentStoryCard().getStages(); i++){
+			//p2 submits foe card
+			FoeCardFactory foeCardFactory = new FoeCardFactory();
+			Card card1 = foeCardFactory.createCard("Boar");
+			game.getMainPlayer().getCards().add(card1);
+			SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+			String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+			mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+			String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+			//p2 submits completed stage
+			mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+							.content(jsonSubmitStageRequest)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+		}
+
+		//p1 joins quest
+		connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p1 submits ally against foe
+		AllyCardFactory allyCardFactory = new AllyCardFactory();
+		Card card1 = allyCardFactory.createCard("Sir Lancelot");
+		game.getPlayers().get(0).getCards().add(card1);
+		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card1,1);
+		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+		int actualBattlePoints = battlePointsOrBidsReceiver.receiveBattlePoints(game, null, game.getPlayers().get(0));
+
+		Assertions.assertEquals(40, actualBattlePoints);
+	}
+
+	//Test Sir Galahad
+	@Test
+	void sirGalahadTest() throws Exception{
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p2 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card to enchanted forest
+		Game game = gameService.getGame(gameId);
+		QuestCardFactory questCardFactory = new QuestCardFactory();
+		StoryCard storyCard = questCardFactory.createCard("Defend the Queen's Honor");
+		game.setCurrentStoryCard(storyCard);
+
+		//p2 accepts to sponsor quest card
+		mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		for(int i = 0; i < game.getCurrentStoryCard().getStages(); i++){
+			//p2 submits foe card
+			FoeCardFactory foeCardFactory = new FoeCardFactory();
+			Card card1 = foeCardFactory.createCard("Boar");
+			game.getMainPlayer().getCards().add(card1);
+			SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+			String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+			mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+			String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+			//p2 submits completed stage
+			mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+							.content(jsonSubmitStageRequest)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+		}
+
+		//p1 joins quest
+		connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p1 submits ally against foe
+		AllyCardFactory allyCardFactory = new AllyCardFactory();
+		Card card1 = allyCardFactory.createCard("Sir Galahad");
+		game.getPlayers().get(0).getCards().add(card1);
+		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card1,1);
+		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+		int actualBattlePoints = battlePointsOrBidsReceiver.receiveBattlePoints(game, null, game.getPlayers().get(0));
+
+		Assertions.assertEquals(15, actualBattlePoints);
+	}
+
+	//Test Sir Tristan battle points when queen iseult is NOT in play
+	@Test
+	void sirTristanTest() throws Exception{
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p2 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card to enchanted forest
+		Game game = gameService.getGame(gameId);
+		QuestCardFactory questCardFactory = new QuestCardFactory();
+		StoryCard storyCard = questCardFactory.createCard("Search for the Holy Grail");
+		game.setCurrentStoryCard(storyCard);
+
+		//p2 accepts to sponsor quest card
+		mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		for(int i = 0; i < game.getCurrentStoryCard().getStages(); i++){
+			//p2 submits foe card
+			FoeCardFactory foeCardFactory = new FoeCardFactory();
+			Card card1 = foeCardFactory.createCard("Boar");
+			game.getMainPlayer().getCards().add(card1);
+			SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+			String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+			mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+			String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+			//p2 submits completed stage
+			mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+							.content(jsonSubmitStageRequest)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+		}
+
+		//p1 joins quest
+		connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p1 submits ally against foe
+		AllyCardFactory allyCardFactory = new AllyCardFactory();
+		Card card1 = allyCardFactory.createCard("Sir Tristan");
+		game.getPlayers().get(0).getCards().add(card1);
+		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card1,1);
+		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+		int actualBattlePoints = battlePointsOrBidsReceiver.receiveBattlePoints(game, null, game.getPlayers().get(0));
+
+		Assertions.assertEquals(10, actualBattlePoints);
+	}
+
+	//Test queen Iseult bids when sir tristan is not in play
+	@Test
+	void queenIseultTest() throws Exception{
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p2 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card to enchanted forest
+		Game game = gameService.getGame(gameId);
+		QuestCardFactory questCardFactory = new QuestCardFactory();
+		StoryCard storyCard = questCardFactory.createCard("Search for the Holy Grail");
+		game.setCurrentStoryCard(storyCard);
+
+		//p2 accepts to sponsor quest card
+		mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		for(int i = 0; i < game.getCurrentStoryCard().getStages(); i++){
+			//p2 submits foe card
+			FoeCardFactory foeCardFactory = new FoeCardFactory();
+			Card card1 = foeCardFactory.createCard("Boar");
+			game.getMainPlayer().getCards().add(card1);
+			SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+			String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+			mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+			String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+			//p2 submits completed stage
+			mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+							.content(jsonSubmitStageRequest)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+		}
+
+		//p1 joins quest
+		connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p1 submits ally against foe
+		AllyCardFactory allyCardFactory = new AllyCardFactory();
+		Card card1 = allyCardFactory.createCard("Queen Iseult");
+		game.getPlayers().get(0).getCards().add(card1);
+		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card1,1);
+		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+		int actualBids = battlePointsOrBidsReceiver.receiveBids(game, null, game.getPlayers().get(0));
+
+		Assertions.assertEquals(2, actualBids);
+	}
+
+	//Test king arthur bids and battelpoints
+	@Test
+	void kingArthurBidsAndBattlePointsTest() throws Exception{
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p2 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card to enchanted forest
+		Game game = gameService.getGame(gameId);
+		QuestCardFactory questCardFactory = new QuestCardFactory();
+		StoryCard storyCard = questCardFactory.createCard("Search for the Holy Grail");
+		game.setCurrentStoryCard(storyCard);
+
+		//p2 accepts to sponsor quest card
+		mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		for(int i = 0; i < game.getCurrentStoryCard().getStages(); i++){
+			//p2 submits foe card
+			FoeCardFactory foeCardFactory = new FoeCardFactory();
+			Card card1 = foeCardFactory.createCard("Boar");
+			game.getMainPlayer().getCards().add(card1);
+			SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+			String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+			mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+			String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+			//p2 submits completed stage
+			mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+							.content(jsonSubmitStageRequest)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+		}
+
+		//p1 joins quest
+		connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p1 submits ally against foe
+		AllyCardFactory allyCardFactory = new AllyCardFactory();
+		Card card1 = allyCardFactory.createCard("King Arthur");
+		game.getPlayers().get(0).getCards().add(card1);
+		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card1,1);
+		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+		int actualBids = battlePointsOrBidsReceiver.receiveBids(game, null, game.getPlayers().get(0));
+		int actualBattlePoints = battlePointsOrBidsReceiver.receiveBattlePoints(game, null, game.getPlayers().get(0));
+
+		Assertions.assertEquals(List.of(2,10), List.of(actualBids,actualBattlePoints));
+	}
+
+	//Test queen guinever bids and battelpoints
+	@Test
+	void queenGuinevereBidsAndBattlePointsTest() throws Exception{
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p2 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card to enchanted forest
+		Game game = gameService.getGame(gameId);
+		QuestCardFactory questCardFactory = new QuestCardFactory();
+		StoryCard storyCard = questCardFactory.createCard("Search for the Holy Grail");
+		game.setCurrentStoryCard(storyCard);
+
+		//p2 accepts to sponsor quest card
+		mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		for(int i = 0; i < game.getCurrentStoryCard().getStages(); i++){
+			//p2 submits foe card
+			FoeCardFactory foeCardFactory = new FoeCardFactory();
+			Card card1 = foeCardFactory.createCard("Boar");
+			game.getMainPlayer().getCards().add(card1);
+			SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+			String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+			mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+			String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+			//p2 submits completed stage
+			mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+							.content(jsonSubmitStageRequest)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+		}
+
+		//p1 joins quest
+		connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p1 submits ally against foe
+		AllyCardFactory allyCardFactory = new AllyCardFactory();
+		Card card1 = allyCardFactory.createCard("Queen Guinevere");
+		game.getPlayers().get(0).getCards().add(card1);
+		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card1,1);
+		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+		int actualBids = battlePointsOrBidsReceiver.receiveBids(game, null, game.getPlayers().get(0));
+		int actualBattlePoints = battlePointsOrBidsReceiver.receiveBattlePoints(game, null, game.getPlayers().get(0));
+
+		Assertions.assertEquals(List.of(3,0), List.of(actualBids,actualBattlePoints));
+	}
+
+	//Test Sir Tristan when queen isuelt is in play
+	@Test
+	void sirTristanTestWithQueen() throws Exception{
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		Player p3 = new Player("Sally","13495859302",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game (p2)
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Connect another player to the game (p3)
+		connectRequest = new ConnectRequest(p3,gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p3 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card to enchanted forest
+		Game game = gameService.getGame(gameId);
+		QuestCardFactory questCardFactory = new QuestCardFactory();
+		StoryCard storyCard = questCardFactory.createCard("Journey through the Enchanted Forest");
+		game.setCurrentStoryCard(storyCard);
+		game.setBonusShield(0);
+
+		//p2 accepts to sponsor quest card
+		mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		for(int i = 0; i < game.getCurrentStoryCard().getStages()-1; i++){
+			//p2 submits foe card
+			FoeCardFactory foeCardFactory = new FoeCardFactory();
+			Card card1 = foeCardFactory.createCard("Saxons");
+			game.getMainPlayer().getCards().add(card1);
+			SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+			String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+			mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+			String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+			//p2 submits completed stage
+			mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+							.content(jsonSubmitStageRequest)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+		}
+
+		//p2 submits test card for final stage
+		TestCardFactory testCardFactory = new TestCardFactory();
+		Card card1 = testCardFactory.createCard("Test of Temptation");
+		game.getMainPlayer().getCards().add(card1);
+		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,game.getCurrentStoryCard().getStages());
+		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,game.getCurrentStoryCard().getStages());
+		String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+		//p2 submits completed stage
+		mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+						.content(jsonSubmitStageRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p3 joins quest
+		connectRequest = new ConnectRequest(game.getPlayers().get(2),gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p1 joins quest
+		connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p3 submits ally against foe
+		AllyCardFactory allyCardFactory = new AllyCardFactory();
+		Card card2 = allyCardFactory.createCard("Queen Iseult");
+		game.getPlayers().get(2).getCards().add(card2);
+		selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(2),gameId,card2,1);
+		jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p1 submits ally against foe
+		Card card3 = allyCardFactory.createCard("Sir Tristan");
+		game.getPlayers().get(0).getCards().add(card3);
+		selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card3,1);
+		jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+
+		battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+		int actualBattlePoints = battlePointsOrBidsReceiver.receiveBattlePoints(game, null, game.getPlayers().get(0));
+
+		Assertions.assertEquals(30, actualBattlePoints);
+	}
+
+	//Test Queen Iseult when Sir Tristan is in play
+	@Test
+	void queenIseultTestWithTristan() throws Exception{
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		Player p3 = new Player("Sally","13495859302",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game (p2)
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Connect another player to the game (p3)
+		connectRequest = new ConnectRequest(p3,gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p3 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card to enchanted forest
+		Game game = gameService.getGame(gameId);
+		QuestCardFactory questCardFactory = new QuestCardFactory();
+		StoryCard storyCard = questCardFactory.createCard("Journey through the Enchanted Forest");
+		game.setCurrentStoryCard(storyCard);
+		game.setBonusShield(0);
+
+		//p2 accepts to sponsor quest card
+		mockMvc.perform(post("/quest/sponsor-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		for(int i = 0; i < game.getCurrentStoryCard().getStages()-1; i++){
+			//p2 submits foe card
+			FoeCardFactory foeCardFactory = new FoeCardFactory();
+			Card card1 = foeCardFactory.createCard("Saxons");
+			game.getMainPlayer().getCards().add(card1);
+			SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,i+1);
+			String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+			mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,i+1);
+			String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+			//p2 submits completed stage
+			mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+							.content(jsonSubmitStageRequest)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+		}
+
+		//p2 submits test card for final stage
+		TestCardFactory testCardFactory = new TestCardFactory();
+		Card card1 = testCardFactory.createCard("Test of Temptation");
+		game.getMainPlayer().getCards().add(card1);
+		SelectSponsorCardRequest selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getMainPlayer(),gameId,card1,game.getCurrentStoryCard().getStages());
+		String jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/select-card-for-sponsored-quest-stage?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		SubmitStageRequest submitStageRequest = new SubmitStageRequest(game.getMainPlayer(),gameId,game.getCurrentStoryCard().getStages());
+		String jsonSubmitStageRequest = mapper.writeValueAsString(submitStageRequest);
+
+		//p2 submits completed stage
+		mockMvc.perform(post("/quest/submit-completed-quest-stage?gameId="+gameId)
+						.content(jsonSubmitStageRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p3 joins quest
+		connectRequest = new ConnectRequest(game.getPlayers().get(2),gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p1 joins quest
+		connectRequest = new ConnectRequest(game.getPlayers().get(0),gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/quest/join-current-quest?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p3 submits ally against foe
+		AllyCardFactory allyCardFactory = new AllyCardFactory();
+		Card card2 = allyCardFactory.createCard("Sir Tristan");
+		game.getPlayers().get(2).getCards().add(card2);
+		selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(2),gameId,card2,1);
+		jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//p1 submits ally against foe
+		Card card3 = allyCardFactory.createCard("Queen Iseult");
+		game.getPlayers().get(0).getCards().add(card3);
+		selectSponsorCardRequest1 = new SelectSponsorCardRequest(game.getPlayers().get(0),gameId,card3,1);
+		jsonSponsorCardRequest1 = mapper.writeValueAsString(selectSponsorCardRequest1);
+
+		mockMvc.perform(post("/quest/submit-card-against-foe?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+
+		battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+		int actualBids = battlePointsOrBidsReceiver.receiveBids(game, null, game.getPlayers().get(0));
+
+		Assertions.assertEquals(4, actualBids);
 	}
 
 	//Test that amour cards disappear after quest is over

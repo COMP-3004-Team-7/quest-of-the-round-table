@@ -36,8 +36,8 @@ public class AllyBattlePointsOrBidsStrategy implements GetBattlePointsOrBidsStra
             }
             if(player.getAllies().get(i).getName().equals("Sir Lancelot")){
                 totalAllyPoints += 15;
-                if(game.getCurrentStoryCard().getName().equals("Defend the Queen's Honour")){
-                    totalAllyPoints += 20;
+                if(game.getCurrentStoryCard().getName().equals("Defend the Queen's Honor")){
+                    totalAllyPoints += 25;
                 }
             }
             if(player.getAllies().get(i).getName().equals("Sir Galahad")){
