@@ -36,8 +36,7 @@ class GameRightDrawer extends React.Component{
                                     ) :<Skeleton/>}
                                 </Stepper>
                                 <br/>
-                                {this.props.players ? <Button variant="contained" onClick={this.props.startGame}>Start Game</Button>
-                                    : <Skeleton/>}
+                                <Button variant="contained" onClick={this.props.startGame}>Start Game</Button>
                             </CardContent>
                         </Card>
                         <Card sx={{m:2, p:2}}>

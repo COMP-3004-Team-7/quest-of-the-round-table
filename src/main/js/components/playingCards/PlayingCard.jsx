@@ -45,7 +45,7 @@ class PlayingCard extends React.Component {
         return (
             <Box sx={{width: 100, height: 140, rotation:this.props.rotation??0, p:2}} ref={this.cardRef} style={this.props.style}>
                 <UserContext>
-                    {({gameID}) => <CardAddDialog card={this.props.card} open={this.state.dialogOpen} handleClose={this.handleDialogClose} gameID={gameID}/>}
+                    {({gameID}) => <CardAddDialog card={this.props.card} open={this.state.dialogOpen} handleClose={this.handleDialogClose} gameID={gameID} stage={this.props.stage}/>}
                 </UserContext>
                 {this.props.interactive?<Menu open={this.state.open} onClose={this.handleClose} anchorEl={this.cardRef.current} onHover>
                     <UserContext.Consumer>
@@ -55,6 +55,7 @@ class PlayingCard extends React.Component {
                 </Menu>:""}
                 <Paper sx={{width: "100%", height: "100%"}} onAuxClick={this.handleClick} onClick={this.handleClick}>
                     <Typography variant="h4">{this.props.card.name}</Typography>
+                    <Typography variant="subtitle">{this.props.card.minbattlepoints+"/"+this.props.card.maxbattlepoints}</Typography>
                 </Paper>
             </Box>
             );

@@ -14,37 +14,40 @@ import {Switch} from "@mui/material";
 class CardAddDialog extends React.Component{
     constructor(props) {
         super(props);
-        this.state = {stage: 0, building: true};
     }
 
 
     submit = (gameID, name) => {
-        this.addCard(gameID, name);
-        ajax({
-            url: "/quest/"+(this.state.building?"submit-completed-quest-stage" : "complete-cards-played-against-foe")+"?gameId="+gameID,
+        this.addCard(gameID, name).then(() => ajax({
+            url: "/quest/"+(this.props.stage.building?"submit-completed-quest-stage" : "complete-cards-played-against-foe")+"?gameId="+gameID,
             type: 'POST',
             contentType: "application/json",
             data: JSON.stringify({
                 "player": {"username": name},
                 "gameId": gameID,
-                "stage": this.state.stage
-            })
-        });
+                "stage": this.props.stage.stage
+            }),
+            success: e => alert("Success"),
+            error: e=> alert(e.responseText )
+        }));
+
     }
 
     addCard = (gameID, name) => {
-        ajax({
-            url: "/quest/"+(this.state.building?"select-card-for-sponsored-quest-stage" : "submit-card-against-foe")+"?gameId="+gameID,
+        return ajax({
+            url: "/quest/"+(this.props.stage.building?"select-card-for-sponsored-quest-stage" : "submit-card-against-foe")+"?gameId="+gameID,
             type: 'POST',
             contentType: "application/json",
             data: JSON.stringify({
                 "player": {"username": name},
                 "gameId": gameID,
                 "card": this.props.card,
-                "stage": this.state.stage
-            })
+                "stage": this.props.stage.stage
+            }),
+            success: () => this.props.handleClose(),
+            error: () => this.props.handleClose()
         });
-        this.props.handleClose();
+
     }
 
     onChangeStage = (e) =>{
@@ -60,18 +63,6 @@ class CardAddDialog extends React.Component{
                     <DialogContentText>
                         Add a card to the current quest stage
                     </DialogContentText>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        id="stageInput"
-                        label="Stage"
-                        type="Number"
-                        fullWidth
-                        variant="standard"
-                        onChange={this.onChangeStage}
-                    />
-                    <Switch defaultChecked label={"Building"} onChange={e=>this.setState({...this.state, building: e.target.checked})}/>
-
                 </DialogContent>
                 <DialogActions>
                     <UserContext.Consumer>
@@ -79,7 +70,6 @@ class CardAddDialog extends React.Component{
                             <Button onClick={this.props.handleClose}>Cancel</Button>
                             <Button onClick={()=>this.addCard(gameID, name)}>Add Weapon</Button>
                             <Button onClick={()=>this.submit(gameID, name)}>Continue</Button>
-
                         </React.Fragment>)}
                     </UserContext.Consumer>
                 </DialogActions>

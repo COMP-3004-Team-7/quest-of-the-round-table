@@ -22,6 +22,7 @@ public class EventCardStrategy implements NewStoryCardStrategy{
                 game.getPlayers().get(i).setStatus("waiting");
             }
         }
+        simpMessagingTemplate.convertAndSend("/topic/game-progress/"+game.getGameId(), game);
         simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+game.getGameId(), game.getCurrentStoryCard());
         eventService.doEvent(game, simpMessagingTemplate);
     }

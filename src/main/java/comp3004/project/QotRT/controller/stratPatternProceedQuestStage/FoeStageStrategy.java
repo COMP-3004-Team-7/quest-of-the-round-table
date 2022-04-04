@@ -56,7 +56,7 @@ public class FoeStageStrategy implements ProceedQuestStageStrategy{
                     //SEND SIMPMESSAGING TEMPLATE TO THE USER THAT HAVE BEEN REMOVED FROM THE LIST
                     removeWeaponCards(game, game.getQuestingPlayers().get(i));
                     removeAmourCards(game, game.getQuestingPlayers().get(i));
-                    game.getQuestingPlayers().remove(i);
+                    simpMessagingTemplate.convertAndSend("/topic/quest-eliminated/"+gameId+"/"+game.getQuestingPlayers().remove(i).getName(), "Eliminated from Quest!");
                     i--;
                 }
                 weaponCardsPlayed = 0;
@@ -145,10 +145,8 @@ public class FoeStageStrategy implements ProceedQuestStageStrategy{
     private void drawCardsForSponsor(Game game) {
         int numStages = game.getCurrentStoryCard().getStages();
         int numCardsPlayed = 0;
-        for(int i = 1; i < numStages + 1; i++){
-            for(int j = 0; j < game.getStage(i).size(); j++){
-                numCardsPlayed++;
-            }
+        for(int i = 1; i < numStages+1; i++){
+            numCardsPlayed += game.getStage(i).size();
         }
         for(int i = 0; i < numStages+numCardsPlayed; i++){
             Card card = game.getAdventureDeck().drawCard();
@@ -166,6 +164,8 @@ public class FoeStageStrategy implements ProceedQuestStageStrategy{
             game.getPlayers().get(i).setStatus("current");
             Card card = game.getAdventureDeck().drawCard();
             game.getQuestingPlayers().get(i).getCards().add(card);
+            simpMessagingTemplate.convertAndSend("/topic/fight-quest-stage/"+game.getGameId()+"/"+
+                    game.getQuestingPlayers().get(i).getName(), stage +1);
             simpMessagingTemplate.convertAndSend("/topic/play-against-quest-stage/"+gameId+"/"+
                     game.getQuestingPlayers().get(i).getName(), game.getStage(stage).get(0));
             simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+
