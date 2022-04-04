@@ -5,7 +5,7 @@ public class QueenIseult extends Card{
         this.bids = 2;
         this.MINbattlepoints = 0;
         this.MAXbattlepoints = 0;
-        this.name = "Queen iseult";
+        this.name = "Queen Iseult";
         this.type = "Ally";
     }
 }

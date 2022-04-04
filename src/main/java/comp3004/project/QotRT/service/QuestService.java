@@ -3,6 +3,9 @@ package comp3004.project.QotRT.service;
 import comp3004.project.QotRT.cards.Card;
 import comp3004.project.QotRT.cards.StoryCard;
 import comp3004.project.QotRT.controller.dto.*;
+import comp3004.project.QotRT.controller.stratPatternBattlePoints.AllyBattlePointsOrBidsStrategy;
+import comp3004.project.QotRT.controller.stratPatternBattlePoints.AmourBattlePointsOrBidsStrategy;
+import comp3004.project.QotRT.controller.stratPatternBattlePoints.BattlePointsOrBidsReceiver;
 import comp3004.project.QotRT.controller.stratPatternNewStory.NewStoryCardDealer;
 import comp3004.project.QotRT.controller.stratPatternProceedQuestStage.FoeStageStrategy;
 import comp3004.project.QotRT.controller.stratPatternProceedQuestStage.QuestStageProceeder;
@@ -20,6 +23,7 @@ import java.util.ArrayList;
 public class QuestService {
     private final NewStoryCardDealer newStoryCardDealer = new NewStoryCardDealer();
     private final QuestStageProceeder questStageProceeder = new QuestStageProceeder();
+    private final BattlePointsOrBidsReceiver battlePointsOrBidsReceiver = new BattlePointsOrBidsReceiver();
 
     //Player has chosen to decline to sponsor the Quest
     public String declineSponsorQuest(String gameId , ConnectRequest request , SimpMessagingTemplate simpMessagingTemplate, GameService gameService){
@@ -371,11 +375,13 @@ public class QuestService {
         if(numbids >= request.getBid()){
             return ResponseEntity.badRequest().body("You need to bid higher than "+ numbids);
         }
-        //Get amour bids as well
         int bidLimit = game.getQuestingPlayers().get(index).getCards().size();
-        if(game.getQuestingPlayers().get(index).getAmours().size() == 1){
-            bidLimit += game.getQuestingPlayers().get(index).getAmours().get(0).getBids();
-        }
+        //Increase bid limit from amours
+        battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AmourBattlePointsOrBidsStrategy());
+        bidLimit += battlePointsOrBidsReceiver.receiveBids(game, simpMessagingTemplate, game.getQuestingPlayers().get(index));
+        //Increase bid limit from allys
+        battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+        bidLimit += battlePointsOrBidsReceiver.receiveBids(game, simpMessagingTemplate, game.getQuestingPlayers().get(index));
         if(request.getBid() > bidLimit){
             return ResponseEntity.badRequest().body("You cannot bid over your bid limit (check number of cards in hand)");
         }

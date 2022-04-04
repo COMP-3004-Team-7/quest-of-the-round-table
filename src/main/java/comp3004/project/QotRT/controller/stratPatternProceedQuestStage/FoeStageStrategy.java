@@ -1,6 +1,9 @@
 package comp3004.project.QotRT.controller.stratPatternProceedQuestStage;
 
 import comp3004.project.QotRT.cards.Card;
+import comp3004.project.QotRT.controller.stratPatternBattlePoints.AllyBattlePointsOrBidsStrategy;
+import comp3004.project.QotRT.controller.stratPatternBattlePoints.AmourBattlePointsOrBidsStrategy;
+import comp3004.project.QotRT.controller.stratPatternBattlePoints.BattlePointsOrBidsReceiver;
 import comp3004.project.QotRT.controller.stratPatternNewStory.NewStoryCardDealer;
 import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
@@ -10,6 +13,7 @@ import java.util.ArrayList;
 
 public class FoeStageStrategy implements ProceedQuestStageStrategy{
     private final NewStoryCardDealer newStoryCardDealer = new NewStoryCardDealer();
+    private final BattlePointsOrBidsReceiver battlePointsOrBidsReceiver = new BattlePointsOrBidsReceiver();
 
     @Override
     public void proceedQuestStage(Game game, SimpMessagingTemplate simpMessagingTemplate, int stage, Player player) {
@@ -40,16 +44,18 @@ public class FoeStageStrategy implements ProceedQuestStageStrategy{
                     weaponCardsPlayed += game.getQuestingPlayers().get(i).getWeaponCardsPlayed().get(i).getMAXbattlepoints();
                 }
                 int totalBattlePointsOfPlayer = weaponCardsPlayed + game.getQuestingPlayers().get(i).getBattlePoints();
-                //Add amour's if applies
-                if(game.getQuestingPlayers().get(i).getAmours().size() == 1) {
-                    totalBattlePointsOfPlayer +=  game.getQuestingPlayers().get(i).getAmours().get(0).getMAXbattlepoints();
-                }
-                //Todo Add Allies -> need some strategy pattern or something or algorithm to calculate
+                //Get Total Battle Points from Amours
+                battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AmourBattlePointsOrBidsStrategy());
+                totalBattlePointsOfPlayer += battlePointsOrBidsReceiver.receiveBattlePoints(game, simpMessagingTemplate, game.getQuestingPlayers().get(i));
+                //Get Total Battle Points from Allies
+                battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+                totalBattlePointsOfPlayer += battlePointsOrBidsReceiver.receiveBattlePoints(game, simpMessagingTemplate, game.getQuestingPlayers().get(i));
 
                 if(totalBattlePointsOfPlayer<foeStagePoints){
                     //THIS PLAYER IS ELIMINATED FROM THE QUEST -> REMOVED FROM THE QUESTINGPLAYERSLIST
                     //SEND SIMPMESSAGING TEMPLATE TO THE USER THAT HAVE BEEN REMOVED FROM THE LIST
                     removeWeaponCards(game, game.getQuestingPlayers().get(i));
+                    removeAmourCards(game, game.getQuestingPlayers().get(i));
                     game.getQuestingPlayers().remove(i);
                     i--;
                 }
