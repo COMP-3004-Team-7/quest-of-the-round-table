@@ -4,11 +4,12 @@ import comp3004.project.QotRT.cards.Card;
 
 public class TestofValor extends Card {
     public TestofValor() {
-        name = "Test of Valor";
+        this.name = "Test of Valor";
         //realcards.add(this);
         //battlepoints = 0;
-        bids = 1;
-        specialevent = null;
+        this.bids = 3;
+        this.type = "Test";
+        this.specialevent = null;
         System.out.println("added Test of Valor le fey to the deck of cards");
     }
 }

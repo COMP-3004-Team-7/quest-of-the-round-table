@@ -21,10 +21,11 @@ public class QuestCardStrategy implements NewStoryCardStrategy{
             else{
                 game.getPlayers().get(i).setStatus("waiting");
             }
+            game.getPlayers().get(i).setBid(0);
         }
         //Set questing players to empty before starting
         game.setQuestingPlayers(new ArrayList<>());
-
+        game.resetStages();
         simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+game.getGameId(), game.getCurrentStoryCard());
         simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+game.getGameId(),game.getCurrentStoryCard());
     }

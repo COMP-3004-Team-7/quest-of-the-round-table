@@ -7,7 +7,8 @@ public class TestQuestingBeast extends Card {
         name = "Test of Questing Beast";
         //realcards.add(this);
        // battlepoints = 0;
-        bids = 1;
+        this.bids = 4;
+        this.type = "Test";
         specialevent = null;
         System.out.println("added test of questing beast le fey to the deck of cards");
     }
