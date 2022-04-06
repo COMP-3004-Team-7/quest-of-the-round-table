@@ -188,7 +188,6 @@ public class TournamentService {
         for (int i=0; i<game.getTournamentPlayers().size(); i++){
             if(game.getTournamentPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
                 game.getTournamentPlayers().get(i).setStatus("waiting");
-                break;
             }
             if(game.getTournamentPlayers().get(i).getStatus().equals("waiting")){
                 numWaitingPlayers++;
