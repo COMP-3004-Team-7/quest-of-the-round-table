@@ -52,12 +52,30 @@ public class EventService {
                 }
             }
 
+            //Possible game winners array list
+            ArrayList<Player> gameWinners = new ArrayList<>();
+            //Update shields and ranks
             for (int i=0 ; i<playerArrayList.size();i++){
                 playerArrayList.get(i).setShields(playerArrayList.get(i).getShields() + 3);
                 playerArrayList.get(i).setRank();
-                //SEND MESSAGE TO UPDATE PLAYER RANK (IF CHANGED)
+                //Todo SEND MESSAGE TO UPDATE PLAYER RANK (IF CHANGED)
+                if(playerArrayList.get(i).getRank().equals("Knight")){
+                    gameWinners.add(playerArrayList.get(i));
+                }
             }
-            //TODO Check for winners
+            //Check for winners and send them message, otherwise draw new story card
+            if(gameWinners.size() > 0) {
+                String winnerString = "";
+                for (int i = 0; i < gameWinners.size(); i++) {
+                    winnerString += gameWinners.get(i).getUsername();
+                    if (i == gameWinners.size() - 1) {
+                        winnerString += " ";
+                    } else {
+                        winnerString += " and ";
+                    }
+                }
+                simpMessagingTemplate.convertAndSend("/topic/game-winner/" + game.getGameId(), winnerString + "won the game!");
+            }
             newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         }
         //All players except player drawing this card lose 1 shield
@@ -76,8 +94,7 @@ public class EventService {
         else if(game.getCurrentStoryCard() instanceof Plague){
             if(game.getMainPlayer().getShields() >= 2){
                 game.getMainPlayer().setShields(game.getMainPlayer().getShields()-2);
-                //TODO
-                //Send simp message to player
+                //TODO Send simp message to player
             }
             newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         }

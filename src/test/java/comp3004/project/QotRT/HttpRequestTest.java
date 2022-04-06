@@ -13,6 +13,7 @@ import comp3004.project.QotRT.model.Game;
 import comp3004.project.QotRT.model.Player;
 import comp3004.project.QotRT.service.GameService;
 import comp3004.project.QotRT.service.TournamentService;
+import org.assertj.core.util.Lists;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -5117,6 +5118,110 @@ class QotRtTournamentTests {
 		Assertions.assertEquals(1, game.getTournamentPlayers().get(indexForSubmitting).getWeaponCardsPlayed().size());
 	}
 
+	//Test that if a player submits a foe, it will throw an error
+	@Test
+	void playerSubmitsFoeToATournamentAndItThrowsError() throws Exception {
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		Player p3 = new Player("Sally","13495859302",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game (p2)
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Connect another player to the game (p3)
+		connectRequest = new ConnectRequest(p3,gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p3 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card to Tintagel
+		Game game = gameService.getGame(gameId);
+		TournamentcardFactory tournamentcardFactory = new TournamentcardFactory();
+		StoryCard storyCard = tournamentcardFactory.createCard("At Tintagel");
+		game.setCurrentStoryCard(storyCard);
+
+
+		//players join tournament
+		int i = 0;
+		int startIndex = game.getPlayers().indexOf(game.getMainPlayer());
+		while(i < 2){
+
+			connectRequest = new ConnectRequest(game.getPlayers().get((startIndex+i)%game.getPlayers().size()), gameId);
+			String jsonSponsorCardRequest1 = mapper.writeValueAsString(connectRequest);
+
+			mockMvc.perform(post("/tournament/join-tournament?gameId="+gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			i++;
+		}
+
+		//One player declines
+		connectRequest = new ConnectRequest(game.getPlayers().get((startIndex+i)%game.getPlayers().size()), gameId);
+		String jsonSponsorCardRequest1 = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/tournament/decline-joining-tournament?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+
+		//Player submits Lance Weapon
+		int indexForSubmitting = game.getTournamentPlayers().indexOf(game.getMainPlayer());
+		FoeCardFactory foeCardFactory = new FoeCardFactory();
+		Card card1 = foeCardFactory.createCard("Boar");
+		game.getTournamentPlayers().get(indexForSubmitting).getCards().add(card1);
+		DiscardRequest discardRequest = new DiscardRequest(game.getTournamentPlayers().get(indexForSubmitting), gameId, card1);
+		jsonSponsorCardRequest1 = mapper.writeValueAsString(discardRequest);
+
+		result = mockMvc.perform(post("/tournament/submit-tournament-card?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isBadRequest()).andReturn();
+
+
+		actualJson = result.getResponse().getContentAsString();
+		Assertions.assertEquals("Can only play weapon, amour, or ally cards", actualJson);
+	}
+
 	//Test that players can submit allies and player with more battle points wins
 	@Test
 	void playersSubmitAlliesToATournamentAndOnePlayerWins() throws Exception {
@@ -5245,10 +5350,139 @@ class QotRtTournamentTests {
 			i++;
 		}
 
-
-
-
 		Assertions.assertEquals(3, game.getPlayers().get(expectedWinnerIndex).getShields());
 	}
+
+	//Test that players can submit allies and if they tie, they play a tie breaker tournament
+	@Test
+	void playersSubmitAlliesToATournamentAndTie() throws Exception {
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		Player p3 = new Player("Sally","13495859302",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game (p2)
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Connect another player to the game (p3)
+		connectRequest = new ConnectRequest(p3,gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p3 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card to Tintagel
+		Game game = gameService.getGame(gameId);
+		TournamentcardFactory tournamentcardFactory = new TournamentcardFactory();
+		StoryCard storyCard = tournamentcardFactory.createCard("At Tintagel");
+		game.setCurrentStoryCard(storyCard);
+
+
+		//players join tournament
+		int i = 0;
+		int startIndex = game.getPlayers().indexOf(game.getMainPlayer());
+		while(i < 2){
+
+			connectRequest = new ConnectRequest(game.getPlayers().get((startIndex+i)%game.getPlayers().size()), gameId);
+			String jsonSponsorCardRequest1 = mapper.writeValueAsString(connectRequest);
+
+			mockMvc.perform(post("/tournament/join-tournament?gameId="+gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			i++;
+		}
+
+		//One player declines
+		connectRequest = new ConnectRequest(game.getPlayers().get((startIndex+i)%game.getPlayers().size()), gameId);
+		String jsonSponsorCardRequest1 = mapper.writeValueAsString(connectRequest);
+
+		mockMvc.perform(post("/tournament/decline-joining-tournament?gameId="+gameId)
+						.content(jsonSponsorCardRequest1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+
+		int expectedWinnerIndex = 0;
+		i = 0;
+		int indexForSubmitting = game.getTournamentPlayers().indexOf(game.getMainPlayer());
+		while(i < 2){
+			AllyCardFactory allyCardFactory = new AllyCardFactory();
+			DiscardRequest discardRequest;
+
+			if(i == 0) {
+				//Player submits king arthur
+				Card card1 = allyCardFactory.createCard("King Arthur");
+				game.getTournamentPlayers().get((indexForSubmitting + i) % game.getTournamentPlayers().size()).getCards().add(card1);
+				discardRequest = new DiscardRequest(game.getTournamentPlayers().get((indexForSubmitting + i) % game.getTournamentPlayers().size()), gameId, card1);
+
+			}
+			else{
+				expectedWinnerIndex = game.getPlayers().indexOf(game.getTournamentPlayers().get((indexForSubmitting + i) % game.getTournamentPlayers().size()));
+				//Player submits sir lancelot
+				Card card1 = allyCardFactory.createCard("King Arthur");
+				game.getTournamentPlayers().get((indexForSubmitting + i) % game.getTournamentPlayers().size()).getCards().add(card1);
+				discardRequest = new DiscardRequest(game.getTournamentPlayers().get((indexForSubmitting + i) % game.getTournamentPlayers().size()), gameId, card1);
+
+
+			}
+			jsonSponsorCardRequest1 = mapper.writeValueAsString(discardRequest);
+			mockMvc.perform(post("/tournament/submit-tournament-card?gameId=" + gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+
+			connectRequest = new ConnectRequest(game.getTournamentPlayers().get((indexForSubmitting + i) % game.getTournamentPlayers().size()), gameId);
+			jsonSponsorCardRequest1 = mapper.writeValueAsString(connectRequest);
+
+			mockMvc.perform(post("/tournament/complete-submitting-tournament-cards?gameId=" + gameId)
+							.content(jsonSponsorCardRequest1)
+							.contentType(MediaType.APPLICATION_JSON)
+							.accept(MediaType.APPLICATION_JSON))
+					.andExpect(status().isOk()).andReturn();
+
+			i++;
+		}
+
+		Assertions.assertEquals(Lists.list("At Tintagel", true), Lists.list(game.getCurrentStoryCard().getName(), game.getInTieBreakerTournament()));
+	}
+
 
 }

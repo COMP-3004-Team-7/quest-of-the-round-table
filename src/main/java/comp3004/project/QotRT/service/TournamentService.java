@@ -181,7 +181,6 @@ public class TournamentService {
     }
 
     public ResponseEntity completeCardsPlayedInTournament(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
-        //TODO Finish complete cards played in tournament method
         Game game = gameService.getGame(gameId);
         //Get player who submitted their cards, set status to "waiting", and check if anyone else needs to submit their cards
         int numWaitingPlayers = 0;
