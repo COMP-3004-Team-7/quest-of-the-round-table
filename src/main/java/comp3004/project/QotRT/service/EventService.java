@@ -98,7 +98,7 @@ public class EventService {
             }
             newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         }
-        else if(game.getCurrentStoryCard() instanceof KingsRecognition){
+        else if(game.getCurrentStoryCard() instanceof KingsArms){
             //FIND THE HIGHEST RANK PLAYER
             //THEN SEND MESSAGE TO THAT PLAYER TO DISCARD ONE OF THEIR WEAPON CARDS
             //IF THAT CANNOT BE DONE - THEN DISCARD 2 FOE CARD
@@ -197,7 +197,7 @@ public class EventService {
             }
             newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         }
-        else if(game.getCurrentStoryCard() instanceof KingsArms){
+        else if(game.getCurrentStoryCard() instanceof KingsRecognition){
             game.setBonusShield(2);
             newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
         }

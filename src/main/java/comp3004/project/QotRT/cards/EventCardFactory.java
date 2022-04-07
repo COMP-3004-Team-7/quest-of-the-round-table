@@ -11,7 +11,7 @@ public class EventCardFactory extends StoryCardFactory{
         } else if (item.equals("King's Recognition")) {
             return new KingsRecognition();
         }else if (item.equals("Queen's Favor")) {
-            return new Queenhonor();
+            return new QueensFavor();
         } else if (item.equals("Court Called to Camelot")) {
             return new CourtCamelot();
         } else if (item.equals("King's Call to Arms")) {

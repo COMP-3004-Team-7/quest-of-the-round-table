@@ -43,6 +43,62 @@ class QotRtQuestTests {
 	private final GameService gameService = new GameService();
     private final BattlePointsOrBidsReceiver battlePointsOrBidsReceiver = new BattlePointsOrBidsReceiver();
 
+	//Test that deck gets rigged
+	@Test
+	void newTestToSeeIfDeckGetsRiggedProperly() throws Exception {
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John","19203391912",0);
+		Player p2 = new Player("Tim","12930494592",0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+		String mainPlayer = gameJSONobj.getJSONObject("mainPlayer").getString("username");
+		//Print current main player
+		Game game = gameService.getGame(gameId);
+		System.out.println("Main player at start = " + game.getMainPlayer());
+		System.out.println("Main player at start = " + mainPlayer);
+
+		//Connect another player to the game
+		ConnectRequest connectRequest = new ConnectRequest(p2,gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p2 starts it)
+		mockMvc.perform(post("/game/play-game?gameId="+gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Expect current story card to be repel saxon raiders, then court called to camelot, then at tintagel
+		game = gameService.getGame(gameId);
+
+		ArrayList<String> actual = new ArrayList<>(List.of(game.getCurrentStoryCard().getName(),
+				game.getStoryDeck().getDeck().get(game.getStoryDeck().getDeck().size()-1).getName(),
+				game.getStoryDeck().getDeck().get(game.getStoryDeck().getDeck().size()-2).getName()));
+		ArrayList<String> expected = new ArrayList<>(List.of("Repel the Saxon Raiders", "All Allies in play must be discarded", "At Tintagel"));
+
+		Assertions.assertEquals(expected, actual);
+	}
+
 	//Test that person who sponsors quest is changed to main player
 	@Test
 	void acceptSponsorQuestUpdatesMainPlayer() throws Exception {
