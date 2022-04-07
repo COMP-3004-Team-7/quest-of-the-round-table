@@ -102,10 +102,12 @@ public class TournamentService {
         //Otherwise, ask next player clockwise if they want to join
         else{
             updatePlayerStatusesClockwise(game, index);
-            simpMessagingTemplate.convertAndSendToUser(game.getPlayers().get(nextPlayerIndex).getName(),
-                    "/topic/join-tournament/"+gameId, game.getCurrentStoryCard());
+            simpMessagingTemplate.convertAndSend("/topic/join-tournament/"+gameId+"/"+
+                    game.getPlayers().get(nextPlayerIndex).getName(), game.getCurrentStoryCard());
         }
 
+        simpMessagingTemplate.convertAndSend("/topic/play-tournament/"+gameId+"/"+
+                request.getPlayer().getUsername(), 1);
         return ResponseEntity.ok().body("You have successfully joined the tournament");
     }
 

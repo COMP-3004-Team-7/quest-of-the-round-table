@@ -18,8 +18,15 @@ class CardAddDialog extends React.Component{
 
 
     submit = (gameID, name) => {
+        let key ={
+            build: "quest/submit-completed-quest-stage",
+            quest: "quest/complete-cards-played-against-foe",
+            tournament: "tournament/complete-submitting-tournament-cards",
+            null: ""
+        }
+
         this.addCard(gameID, name).then(() => ajax({
-            url: "/quest/"+(this.props.stage.building?"submit-completed-quest-stage" : "complete-cards-played-against-foe")+"?gameId="+gameID,
+            url: "/"+key[this.props.stage.buildFor]+"?gameId="+gameID,
             type: 'POST',
             contentType: "application/json",
             data: JSON.stringify({
@@ -34,8 +41,15 @@ class CardAddDialog extends React.Component{
     }
 
     addCard = (gameID, name) => {
+        let key = {
+            build: "quest/select-card-for-sponsored-quest-stage",
+            quest: "quest/submit-card-against-foe",
+            tournament: "tournament/submit-tournament-card",
+            null: ""
+        }
+
         return ajax({
-            url: "/quest/"+(this.props.stage.building?"select-card-for-sponsored-quest-stage" : "submit-card-against-foe")+"?gameId="+gameID,
+            url: "/"+key[this.props.stage.buildFor]+"?gameId="+gameID,
             type: 'POST',
             contentType: "application/json",
             data: JSON.stringify({

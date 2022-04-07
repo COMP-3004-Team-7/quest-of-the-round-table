@@ -8,10 +8,7 @@ import {Alert, Card, Stack, StyledEngineProvider, Typography} from "@mui/materia
 
 //Game object stuff- move out eventually
 import * as Stomp from "@stomp/stompjs";
-//const Stomp = StompJs.Stomp;
 import ajax from 'can-ajax';
-import SockJs from 'sockjs-client'
-import {PlayingCard} from "./components/playingCards/PlayingCard";
 import {StoryCard} from "./components/StoryCard";
 
 export const UserContext = React.createContext(undefined);
@@ -20,7 +17,6 @@ class Game extends React.Component {
     constructor(props) {
         super(props);
         this.stompService = Stomp.client("ws://"+window.location.host+"/ws");
-        //this.stompService = Stomp.over(function(){return new SockJs("/ws");});
 
         this.state = {
             game: {},
@@ -29,7 +25,7 @@ class Game extends React.Component {
             storyCard: {},
             phase: "",
             status: "",
-            stage: {stage: 0, building:null}
+            stage: {stage: 0, buildFor: null}
         };
     }
 
@@ -56,13 +52,16 @@ class Game extends React.Component {
                 this.setState({...this.state, storyCard: JSON.parse(response.body)});
             });
             this.stompService.subscribe("/topic/sponsor-quest/"+game.gameId+"/"+this.state.name, response => {
-                this.setState({...this.state, stage: {stage: 1, building: true}});
+                this.setState({...this.state, stage: {stage: 1, buildFor: "build"}});
             });
             this.stompService.subscribe("/topic/build-quest-stage/"+game.gameId+"/"+this.state.name, response => {
-                this.setState({...this.state, stage: {stage: response.body, building: true}});
+                this.setState({...this.state, stage: {stage: response.body, buildFor: "build"}});
             });
             this.stompService.subscribe("/topic/quest-build-complete/"+game.gameId, response => alert("Quest build completed!"));
 
+            this.stompService.subscribe("/topic/play-tournament/"+game.gameId+"/"+this.state.name, response => {
+                this.setState({...this.state, stage: {stage: 1, buildFor: "tournament"}});
+            });
 
             this.stompService.subscribe("/topic/play-against-quest-stage/"+game.gameId, response => {
                 alert(response.body);
@@ -70,7 +69,7 @@ class Game extends React.Component {
             });
             this.stompService.subscribe("/topic/fight-quest-stage/"+game.gameId+"/"+this.state.name, response => {
                 //alert(response.body);
-                this.setState({...this.state, stage: {stage: response.body, building: false}});
+                this.setState({...this.state, stage: {stage: response.body, buildFor: "quest"}});
             });
 
             this.stompService.subscribe("/topic/quest-winner/"+game.gameId+"/"+this.state.name, response => alert(response.body));

@@ -84,6 +84,21 @@ class GameRightDrawer extends React.Component{
                                                 contentType: "application/json",
                                                 data: JSON.stringify({player: {username: name}, gameId: gameID})
                                             })}}>Decline Quest</Button>
+                                            <Button onClick={
+                                                () => {ajax({
+                                                    url: "/tournament/join-tournament?gameId=" + gameID,
+                                                    type: 'POST',
+                                                    dataType: "json",
+                                                    contentType: "application/json",
+                                                    data: JSON.stringify({player: {username: name}, gameId: gameID})
+                                                })}}>Join Tournament</Button>
+                                            <Button onClick={ () =>{ajax({
+                                                url: "/tournament/decline-to-join-tournament?gameId=" + gameID,
+                                                type: 'POST',
+                                                dataType: "json",
+                                                contentType: "application/json",
+                                                data: JSON.stringify({player: {username: name}, gameId: gameID})
+                                            })}}>Decline Tournament</Button>
                                         </React.Fragment>
                                     )}
                                 </UserContext.Consumer>

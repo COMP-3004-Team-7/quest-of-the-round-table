@@ -56,6 +56,7 @@ class PlayingCard extends React.Component {
                 <Paper sx={{width: "100%", height: "100%"}} onAuxClick={this.handleClick} onClick={this.handleClick}>
                     <Typography variant="h4">{this.props.card.name}</Typography>
                     <Typography variant="subtitle">{this.props.card.minbattlepoints+"/"+this.props.card.maxbattlepoints}</Typography>
+                    <Typography variant="subtitle">{this.props.card.type}</Typography>
                 </Paper>
             </Box>
             );
