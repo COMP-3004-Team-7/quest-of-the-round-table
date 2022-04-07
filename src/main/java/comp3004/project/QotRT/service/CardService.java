@@ -30,6 +30,9 @@ public class CardService {
         game.getAdventureDeck().buildStartingDeck().shuffleDeck();
         game.getStoryDeck().buildStoryDeck().shuffle();
 
+        //Line added to rig deck
+        game.getStoryDeck().rigDeck();
+
         //Deal 12 Cards to Each Player
         for(int i = 0; i < game.getPlayers().size(); i++){
             Player p = game.getPlayers().get(i);

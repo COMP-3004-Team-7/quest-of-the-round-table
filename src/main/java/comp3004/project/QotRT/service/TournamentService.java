@@ -3,6 +3,9 @@ package comp3004.project.QotRT.service;
 import comp3004.project.QotRT.cards.Card;
 import comp3004.project.QotRT.controller.dto.ConnectRequest;
 import comp3004.project.QotRT.controller.dto.DiscardRequest;
+import comp3004.project.QotRT.controller.stratPatternBattlePoints.AllyBattlePointsOrBidsStrategy;
+import comp3004.project.QotRT.controller.stratPatternBattlePoints.AmourBattlePointsOrBidsStrategy;
+import comp3004.project.QotRT.controller.stratPatternBattlePoints.BattlePointsOrBidsReceiver;
 import comp3004.project.QotRT.controller.stratPatternNewStory.NewStoryCardDealer;
 import comp3004.project.QotRT.controller.stratPatternNewStory.NewStoryCardStrategy;
 import comp3004.project.QotRT.model.Game;
@@ -19,6 +22,7 @@ import java.util.HashMap;
 @Service
 public class TournamentService {
     private final NewStoryCardDealer newStoryCardDealer = new NewStoryCardDealer();
+    private final BattlePointsOrBidsReceiver battlePointsOrBidsReceiver = new BattlePointsOrBidsReceiver();
 
     public ResponseEntity declineJoiningTournament(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
         Game game = gameService.getGame(gameId);
@@ -48,6 +52,7 @@ public class TournamentService {
                     Card c = game.getAdventureDeck().drawCard();
                     game.getTournamentPlayers().get(i).getCards().add(c);
                     game.getTournamentPlayers().get(i).setStatus("current");
+                    game.setNumOfTournamentPlayers(game.getTournamentPlayers().size()); //set original tournament size
                     simpMessagingTemplate.convertAndSendToUser(game.getTournamentPlayers().get(i).getName(),
                             "/topic/play-in-tournament/"+gameId ,game.getCurrentStoryCard());
                 }
@@ -178,14 +183,12 @@ public class TournamentService {
     }
 
     public ResponseEntity completeCardsPlayedInTournament(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
-        //TODO Finish complete cards played in tournament method
         Game game = gameService.getGame(gameId);
         //Get player who submitted their cards, set status to "waiting", and check if anyone else needs to submit their cards
         int numWaitingPlayers = 0;
         for (int i=0; i<game.getTournamentPlayers().size(); i++){
             if(game.getTournamentPlayers().get(i).getUsername().equals(request.getPlayer().getUsername())){
                 game.getTournamentPlayers().get(i).setStatus("waiting");
-                break;
             }
             if(game.getTournamentPlayers().get(i).getStatus().equals("waiting")){
                 numWaitingPlayers++;
@@ -203,11 +206,14 @@ public class TournamentService {
                     BattlePoints += p.getWeaponCardsPlayed().get(j).getMAXbattlepoints();
                 }
                 BattlePoints += p.getBattlePoints();
-                //Add amour battlepoints
-                for(int j = 0; j < p.getAmours().size(); j++){
-                    BattlePoints += p.getAmours().get(j).getMAXbattlepoints();
-                }
-                //Todo deal with adding ally battlepoints
+                //Get Total Battle Points from Amours
+                battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AmourBattlePointsOrBidsStrategy());
+                BattlePoints += battlePointsOrBidsReceiver.receiveBattlePoints(game, simpMessagingTemplate, game.getTournamentPlayers().get(i));
+                //Get Total Battle Points from Allies
+                battlePointsOrBidsReceiver.setGetBattlePointsOrBidsStrategy(new AllyBattlePointsOrBidsStrategy());
+                BattlePoints += battlePointsOrBidsReceiver.receiveBattlePoints(game, simpMessagingTemplate, game.getTournamentPlayers().get(i));
+
+
                 playersPointsMap.put(p,BattlePoints);
             }
             int maxValue = Collections.max(playersPointsMap.values());
@@ -230,8 +236,12 @@ public class TournamentService {
                 removeAmourCards(game, winners.get(0));
                 simpMessagingTemplate.convertAndSendToUser(winners.get(0).getName(),"/topic/cards-in-hand/"+gameId
                         , winners.get(0).getCards());
-                //Todo check for winner
-                newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
+                if(winners.get(0).getRank().equals("Knight")){
+                    simpMessagingTemplate.convertAndSend("/topic/game-winner/" + gameId, winners.get(0).getUsername() + " won the game!");
+                }
+                else {
+                    newStoryCardDealer.dealWithNewStoryCard(game, simpMessagingTemplate);
+                }
             }
             //Check if multiple winners and if they need a tie-breaker
             else if(!game.getInTieBreakerTournament()){
@@ -250,13 +260,30 @@ public class TournamentService {
             }
             //Otherwise, multiple winners even after a tie-breaker
             else{
+                ArrayList<Player> gameWinners = new ArrayList<>();
                 for(Player p : winners){
                     removeWeaponCards(game,p);
                     removeAmourCards(game,p);
                     p.setShields(game.getCurrentStoryCard().getStages() + game.getNumOfTournamentPlayers());
+                    if(p.getRank().equals("Knight")){
+                        gameWinners.add(p);
+                    }
                 }
-                //Todo check for winner
-                newStoryCardDealer.dealWithNewStoryCard(game,simpMessagingTemplate);
+                if(gameWinners.size() > 0) {
+                    String winnerString = "";
+                    for (int i = 0; i < winners.size(); i++) {
+                        winnerString += winners.get(i).getUsername();
+                        if (i == winners.size() - 1) {
+                            winnerString += " ";
+                        } else {
+                            winnerString += " and ";
+                        }
+                    }
+                    simpMessagingTemplate.convertAndSend("/topic/game-winner/" + gameId, winnerString + "won the game!");
+                }
+                else {
+                    newStoryCardDealer.dealWithNewStoryCard(game, simpMessagingTemplate);
+                }
             }
         }
 

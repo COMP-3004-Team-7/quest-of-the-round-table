@@ -118,7 +118,7 @@ public class AdventureDeck {
         //Ally card
         for(int i = 0; i < numAlly; i++){
             deck.add(allycardfactory.createCard("Queen Iseult"));
-            deck.add(allycardfactory.createCard("Merlin"));
+            //deck.add(allycardfactory.createCard("Merlin"));
             deck.add(allycardfactory.createCard("Sir Galahad"));
             deck.add(allycardfactory.createCard("Sir Lancelot"));
             deck.add(allycardfactory.createCard("Sir Tristan"));

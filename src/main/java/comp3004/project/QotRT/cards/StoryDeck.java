@@ -82,7 +82,7 @@ public class StoryDeck {
             deck.add(eventfactory.createCard("Chivalrous Deed"));
             deck.add(eventfactory.createCard("Pox"));
             deck.add(eventfactory.createCard("Plague"));
-            deck.add(eventfactory.createCard("King's Call to Arms"));
+            //deck.add(eventfactory.createCard("King's Call to Arms"));
             deck.add(eventfactory.createCard("Prosperity Throughout the Realm"));
 
         }
@@ -93,6 +93,16 @@ public class StoryDeck {
 
     public void shuffle(){
         Collections.shuffle(deck);
+    }
+
+    public void rigDeck(){
+        //Rig deck to be quest, event, tournament
+        QuestCardFactory questCardFactory = new QuestCardFactory();
+        TournamentcardFactory tournamentfactory = new TournamentcardFactory();
+        EventCardFactory eventfactory = new EventCardFactory();
+        deck.add(tournamentfactory.createCard("At Tintagel"));
+        deck.add(eventfactory.createCard("Court Called to Camelot"));
+        deck.add(questCardFactory.createCard("Repel the Saxon Raiders"));
     }
 
     //Draw Top Card of Deck
