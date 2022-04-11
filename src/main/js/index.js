@@ -52,15 +52,26 @@ class Game extends React.Component {
                 this.setState({...this.state, storyCard: JSON.parse(response.body)});
             });
             this.stompService.subscribe("/topic/sponsor-quest/"+game.gameId+"/"+this.state.name, response => {
+                alert("Sponsor Quest?");
                 this.setState({...this.state, stage: {stage: 1, buildFor: "build"}});
             });
+
             this.stompService.subscribe("/topic/build-quest-stage/"+game.gameId+"/"+this.state.name, response => {
                 this.setState({...this.state, stage: {stage: response.body, buildFor: "build"}});
             });
-            this.stompService.subscribe("/topic/quest-build-complete/"+game.gameId, response => alert("Quest build completed!"));
+
+            this.stompService.subscribe("/topic/quest-build-complete/"+game.gameId+"/"+this.state.name, response => alert("Quest build completed! Join?"));
 
             this.stompService.subscribe("/topic/play-tournament/"+game.gameId+"/"+this.state.name, response => {
                 this.setState({...this.state, stage: {stage: 1, buildFor: "tournament"}});
+            });
+
+            this.stompService.subscribe("/topic/join-tournament/"+game.gameId+"/"+this.state.name, response => {
+                alert("Join Tournament?");
+            });
+
+            this.stompService.subscribe("/topic/tournament-outcome/"+game.gameId+"/"+this.state.name, response => {
+               alert(response);
             });
 
             this.stompService.subscribe("/topic/play-against-quest-stage/"+game.gameId, response => {

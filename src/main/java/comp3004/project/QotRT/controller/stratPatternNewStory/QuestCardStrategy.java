@@ -27,6 +27,6 @@ public class QuestCardStrategy implements NewStoryCardStrategy{
         game.setQuestingPlayers(new ArrayList<>());
         game.resetStages();
         simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+game.getGameId(), game.getCurrentStoryCard());
-        simpMessagingTemplate.convertAndSendToUser(game.getMainPlayer().getName(),"/topic/sponsor-quest/"+game.getGameId(),game.getCurrentStoryCard());
+        simpMessagingTemplate.convertAndSend("/topic/sponsor-quest/"+game.getGameId()+"/"+game.getMainPlayer().getName(),game.getCurrentStoryCard());
     }
 }

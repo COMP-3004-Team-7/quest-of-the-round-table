@@ -34,59 +34,59 @@ public class StoryDeck {
         QuestCardFactory questCardFactory = new QuestCardFactory();
         TournamentcardFactory tournamentfactory = new TournamentcardFactory();
         EventCardFactory eventfactory = new EventCardFactory();
-        for(int i = 0; i < numHolyGrail; i++){
-            deck.add(questCardFactory.createCard("Search for the Holy Grail"));
-        }
-        for(int i = 0; i < numGreenKnight; i++){
-            deck.add(questCardFactory.createCard("Test of the Green Knight"));
-        }
-        for(int i = 0; i < numQuestingBeast; i++){
-            deck.add(questCardFactory.createCard("Search for the Questing Beast"));
-        }
-        for(int i = 0; i < numQueensHonor; i++){
-            deck.add(questCardFactory.createCard("Defend the Queen's Honor"));
-        }
-        for(int i = 0; i < numFairMaiden; i++){
-            deck.add(questCardFactory.createCard("Rescue the Fair Maiden"));
-        }
-        for(int i = 0; i < numEnchantedForest; i++){
-            deck.add(questCardFactory.createCard("Journey through the Enchanted Forest"));
-        }
-        for(int i = 0; i < numKingArthurEnemy; i++){
-            deck.add(questCardFactory.createCard("Vanquish King Arthur's Enemies"));
-        }
-        for(int i = 0; i < numSlayDragon; i++){
-            deck.add(questCardFactory.createCard("Slay the Dragon"));
-        }
-        for(int i = 0; i < numBoarHunt; i++){
-            deck.add(questCardFactory.createCard("Boar Hunt"));
-        }
-        for(int i = 0; i < numSaxonRaiders; i++){
-            deck.add(questCardFactory.createCard("Repel the Saxon Raiders"));
-        }
-        //adding tournaments to story deck
-        for(int i = 0; i < tournamentcount; i++){
-            deck.add(tournamentfactory.createCard("At Camelot"));
-            deck.add(tournamentfactory.createCard("At Orkney"));
-            deck.add(tournamentfactory.createCard("At Tintagel"));
-            deck.add(tournamentfactory.createCard("At York"));
-        }
-        //adding events to story deck.
-        for(int i = 0; i < eventsmaxcount; i++){
-           deck.add(eventfactory.createCard("Queen's Favor"));
-           deck.add(eventfactory.createCard("King's Recognition"));
-           deck.add(eventfactory.createCard("Court Called to Camelot"));
-
-        }
-        for(int i = 0; i < eventsmincount; i++){
-            deck.add(eventfactory.createCard("Chivalrous Deed"));
-            deck.add(eventfactory.createCard("Pox"));
-            deck.add(eventfactory.createCard("Plague"));
-            //deck.add(eventfactory.createCard("King's Call to Arms"));
-            deck.add(eventfactory.createCard("Prosperity Throughout the Realm"));
-
-        }
-
+//        for(int i = 0; i < numHolyGrail; i++){
+//            deck.add(questCardFactory.createCard("Search for the Holy Grail"));
+//        }
+//        for(int i = 0; i < numGreenKnight; i++){
+//            deck.add(questCardFactory.createCard("Test of the Green Knight"));
+//        }
+//        for(int i = 0; i < numQuestingBeast; i++){
+//            deck.add(questCardFactory.createCard("Search for the Questing Beast"));
+//        }
+//        for(int i = 0; i < numQueensHonor; i++){
+//            deck.add(questCardFactory.createCard("Defend the Queen's Honor"));
+//        }
+//        for(int i = 0; i < numFairMaiden; i++){
+//            deck.add(questCardFactory.createCard("Rescue the Fair Maiden"));
+//        }
+//        for(int i = 0; i < numEnchantedForest; i++){
+//            deck.add(questCardFactory.createCard("Journey through the Enchanted Forest"));
+//        }
+//        for(int i = 0; i < numKingArthurEnemy; i++){
+//            deck.add(questCardFactory.createCard("Vanquish King Arthur's Enemies"));
+//        }
+//        for(int i = 0; i < numSlayDragon; i++){
+//            deck.add(questCardFactory.createCard("Slay the Dragon"));
+//        }
+//        for(int i = 0; i < numBoarHunt; i++){
+//            deck.add(questCardFactory.createCard("Boar Hunt"));
+//        }
+//        for(int i = 0; i < numSaxonRaiders; i++){
+//            deck.add(questCardFactory.createCard("Repel the Saxon Raiders"));
+//        }
+//        //adding tournaments to story deck
+//        for(int i = 0; i < tournamentcount; i++){
+//            deck.add(tournamentfactory.createCard("At Camelot"));
+//            deck.add(tournamentfactory.createCard("At Orkney"));
+//            deck.add(tournamentfactory.createCard("At Tintagel"));
+//            deck.add(tournamentfactory.createCard("At York"));
+//        }
+//        //adding events to story deck.
+//        for(int i = 0; i < eventsmaxcount; i++){
+//           deck.add(eventfactory.createCard("Queen's Favor"));
+//           deck.add(eventfactory.createCard("King's Recognition"));
+//           deck.add(eventfactory.createCard("Court Called to Camelot"));
+//
+//        }
+//        for(int i = 0; i < eventsmincount; i++){
+//            deck.add(eventfactory.createCard("Chivalrous Deed"));
+//            deck.add(eventfactory.createCard("Pox"));
+//            deck.add(eventfactory.createCard("Plague"));
+//            //deck.add(eventfactory.createCard("King's Call to Arms"));
+//            deck.add(eventfactory.createCard("Prosperity Throughout the Realm"));
+//
+//        }
+        deck.add(tournamentfactory.createCard("At Camelot"));
 
         return this;
     }

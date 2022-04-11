@@ -15,6 +15,7 @@
 	<description>Spring Boot Chat</description>
 	<properties>
 		<java.version>11</java.version>
+		<exec.mainClass>comp3004.project.QotRT.QotRtApplication</exec.mainClass>
 	</properties>
 	<dependencies>
 		<dependency>

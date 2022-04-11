@@ -41,7 +41,7 @@ public class FoeStageStrategy implements ProceedQuestStageStrategy{
             int weaponCardsPlayed = 0;
             for(int i=0; i<game.getQuestingPlayers().size(); i++){
                 for(int j=0 ; j<game.getQuestingPlayers().get(i).getWeaponCardsPlayed().size(); j++) {
-                    weaponCardsPlayed += game.getQuestingPlayers().get(i).getWeaponCardsPlayed().get(i).getMAXbattlepoints();
+                    weaponCardsPlayed += game.getQuestingPlayers().get(i).getWeaponCardsPlayed().get(j).getMAXbattlepoints();
                 }
                 int totalBattlePointsOfPlayer = weaponCardsPlayed + game.getQuestingPlayers().get(i).getBattlePoints();
                 //Get Total Battle Points from Amours

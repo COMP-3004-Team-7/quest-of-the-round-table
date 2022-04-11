@@ -225,17 +225,22 @@ public class TournamentService {
                 else{
                     removeWeaponCards(game,game.getTournamentPlayers().get(i));
                     removeAmourCards(game, game.getTournamentPlayers().get(i));
+                    simpMessagingTemplate.convertAndSend("/topic/tournament-outcome/"+gameId+"/"+
+                            game.getTournamentPlayers().get(i).getName(), "Lost tournament");
                 }
             }
 
             //Check for 1 winner
             if(winners.size() == 1){
                 //give shields, remove weapons and amours, draw new story card
-                winners.get(0).setShields(game.getCurrentStoryCard().getStages() + game.getNumOfTournamentPlayers());
+                winners.get(0).setShields(winners.get(0).getShields() + game.getCurrentStoryCard().getStages() + game.getNumOfTournamentPlayers());
                 removeWeaponCards(game,winners.get(0));
                 removeAmourCards(game, winners.get(0));
-                simpMessagingTemplate.convertAndSendToUser(winners.get(0).getName(),"/topic/cards-in-hand/"+gameId
+                simpMessagingTemplate.convertAndSend("/topic/cards-in-hand/"+gameId+"/"+winners.get(0).getName()
                         , winners.get(0).getCards());
+                simpMessagingTemplate.convertAndSend("/topic/tournament-outcome/"+gameId+"/"+winners.get(0).getName()
+                        , "Won tournament, you were awarded "+game.getCurrentStoryCard().getStages() +
+                                game.getNumOfTournamentPlayers()+" shields for a total of "+winners.get(0).getShields());
                 if(winners.get(0).getRank().equals("Knight")){
                     simpMessagingTemplate.convertAndSend("/topic/game-winner/" + gameId, winners.get(0).getUsername() + " won the game!");
                 }
@@ -257,6 +262,7 @@ public class TournamentService {
                             "/topic/play-in-tournament/"+gameId ,game.getCurrentStoryCard());
                 }
                 game.setInTieBreakerTournament(true);
+                return ResponseEntity.ok().body("Tie breaker required");
             }
             //Otherwise, multiple winners even after a tie-breaker
             else{
