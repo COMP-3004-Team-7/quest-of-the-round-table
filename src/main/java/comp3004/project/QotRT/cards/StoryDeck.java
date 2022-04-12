@@ -106,8 +106,7 @@ public class StoryDeck {
     }
 
     public void rigDeckOne(){
-        //Rig deck to be quest, event, tournament
-        QuestCardFactory questCardFactory = new QuestCardFactory();
+        //Rig deck to be event
         EventCardFactory eventfactory = new EventCardFactory();
         deck.add(eventfactory.createCard("Chivalrous Deed"));
         deck.add(eventfactory.createCard("Pox"));
