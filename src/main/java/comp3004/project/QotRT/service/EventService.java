@@ -17,7 +17,7 @@ import java.util.HashMap;
 public class EventService {
     private final NewStoryCardDealer newStoryCardDealer = new NewStoryCardDealer();
 
-    public void doEvent(Game game, SimpMessagingTemplate simpMessagingTemplate){
+    public void doEvent(Game game, SimpMessagingTemplate simpMessagingTemplate) throws InterruptedException {
         if(game.getCurrentStoryCard() instanceof ChivalrousDeed) {
             String lowRank = "";
             int leastNumShields = 0;
@@ -214,7 +214,7 @@ public class EventService {
         }
     }
 
-    public ResponseEntity discardWeapon(String gameId, DiscardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+    public ResponseEntity discardWeapon(String gameId, DiscardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) throws InterruptedException {
         System.out.println("discard weapon card request");
         System.out.println("PLAYER: " + request.getPlayer());
         System.out.println("GAMEID: " + request.getGameId());
@@ -246,7 +246,7 @@ public class EventService {
         return ResponseEntity.ok().body("");
     }
 
-    public ResponseEntity discardFoe(String gameId, DiscardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+    public ResponseEntity discardFoe(String gameId, DiscardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) throws InterruptedException {
         System.out.println("discard weapon card request");
         System.out.println("PLAYER: " + request.getPlayer());
         System.out.println("GAMEID: " + request.getGameId());

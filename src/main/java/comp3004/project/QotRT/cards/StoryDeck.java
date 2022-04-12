@@ -103,19 +103,28 @@ public class StoryDeck {
         deck.add(tournamentfactory.createCard("At Tintagel"));
         deck.add(eventfactory.createCard("Court Called to Camelot"));
         deck.add(questCardFactory.createCard("Repel the Saxon Raiders"));
+        rigDeckOne();
     }
 
     public void rigDeckOne(){
         //Rig deck to be event
+        QuestCardFactory questCardFactory = new QuestCardFactory();
         EventCardFactory eventfactory = new EventCardFactory();
-        deck.add(eventfactory.createCard("Chivalrous Deed"));
-        deck.add(eventfactory.createCard("Pox"));
-        deck.add(eventfactory.createCard("Plague"));
-        deck.add(eventfactory.createCard("King's Recognition"));
-        deck.add(eventfactory.createCard("Queen's Favor"));
         deck.add(eventfactory.createCard("Court Called to Camelot"));
-        deck.add(eventfactory.createCard("King's Call to Arms"));
+        deck.add(questCardFactory.createCard("Repel the Saxon Raiders"));
+        deck.add(eventfactory.createCard("King's Recognition"));
+        deck.add(questCardFactory.createCard("Repel the Saxon Raiders"));
+        deck.add(eventfactory.createCard("Pox"));
+        deck.add(questCardFactory.createCard("Repel the Saxon Raiders"));
+        deck.add(eventfactory.createCard("Plague"));
+        deck.add(questCardFactory.createCard("Repel the Saxon Raiders"));
+        deck.add(eventfactory.createCard("Queen's Favor"));
+        //deck.add(eventfactory.createCard("King's Call to Arms"));
+        deck.add(questCardFactory.createCard("Repel the Saxon Raiders"));
         deck.add(eventfactory.createCard("Prosperity Throughout the Realm"));
+        deck.add(questCardFactory.createCard("Repel the Saxon Raiders"));
+        deck.add(questCardFactory.createCard("Repel the Saxon Raiders"));
+        deck.add(eventfactory.createCard("Chivalrous Deed"));
     }
 
     //Draw Top Card of Deck

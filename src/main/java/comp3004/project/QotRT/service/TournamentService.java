@@ -24,7 +24,7 @@ public class TournamentService {
     private final NewStoryCardDealer newStoryCardDealer = new NewStoryCardDealer();
     private final BattlePointsOrBidsReceiver battlePointsOrBidsReceiver = new BattlePointsOrBidsReceiver();
 
-    public ResponseEntity declineJoiningTournament(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+    public ResponseEntity declineJoiningTournament(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) throws InterruptedException {
         Game game = gameService.getGame(gameId);
         //Get index of player who declined
         int index = 0;
@@ -68,7 +68,7 @@ public class TournamentService {
         return ResponseEntity.ok().body("You have declined to join tournament");
     }
 
-    public ResponseEntity joinTournament(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+    public ResponseEntity joinTournament(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) throws InterruptedException {
         Game game = gameService.getGame(gameId);
         //Get index of player who joined and add them to tournament players
         int index = 0;
@@ -182,7 +182,7 @@ public class TournamentService {
         return ResponseEntity.ok().body("You have successfully submitted a card in the tournament");
     }
 
-    public ResponseEntity completeCardsPlayedInTournament(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+    public ResponseEntity completeCardsPlayedInTournament(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) throws InterruptedException {
         Game game = gameService.getGame(gameId);
         //Get player who submitted their cards, set status to "waiting", and check if anyone else needs to submit their cards
         int numWaitingPlayers = 0;

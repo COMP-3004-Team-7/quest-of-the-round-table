@@ -16,7 +16,7 @@ public class FoeStageStrategy implements ProceedQuestStageStrategy{
     private final BattlePointsOrBidsReceiver battlePointsOrBidsReceiver = new BattlePointsOrBidsReceiver();
 
     @Override
-    public void proceedQuestStage(Game game, SimpMessagingTemplate simpMessagingTemplate, int stage, Player player) {
+    public void proceedQuestStage(Game game, SimpMessagingTemplate simpMessagingTemplate, int stage, Player player) throws InterruptedException {
         String gameId = game.getGameId();
         for(int i = 0; i < game.getQuestingPlayers().size(); i++){
             if(game.getQuestingPlayers().get(i).getUsername().equals(player.getUsername())){

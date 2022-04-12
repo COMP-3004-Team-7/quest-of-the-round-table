@@ -5,5 +5,5 @@ import comp3004.project.QotRT.model.Game;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 public interface NewStoryCardStrategy {
-    void dealWithNewStoryCard(Game game, SimpMessagingTemplate simpMessagingTemplate);
+    void dealWithNewStoryCard(Game game, SimpMessagingTemplate simpMessagingTemplate) throws InterruptedException;
 }

@@ -26,6 +26,7 @@ public class QuestCardStrategy implements NewStoryCardStrategy{
         //Set questing players to empty before starting
         game.setQuestingPlayers(new ArrayList<>());
         game.resetStages();
+        simpMessagingTemplate.convertAndSend("/topic/game-progress/"+game.getGameId(), game);
         simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+game.getGameId(), game.getCurrentStoryCard());
         simpMessagingTemplate.convertAndSend("/topic/sponsor-quest/"+game.getGameId()+"/"+game.getMainPlayer().getName(),game.getCurrentStoryCard());
     }

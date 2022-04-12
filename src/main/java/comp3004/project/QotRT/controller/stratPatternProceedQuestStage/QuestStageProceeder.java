@@ -13,7 +13,7 @@ public class QuestStageProceeder {
         this.proceedQuestStageStrategy = proceedQuestStageStrategy;
     }
 
-    public void proceedQuestStage(Game game, SimpMessagingTemplate simpMessagingTemplate, int stage, Player player){
+    public void proceedQuestStage(Game game, SimpMessagingTemplate simpMessagingTemplate, int stage, Player player) throws InterruptedException {
         proceedQuestStageStrategy.proceedQuestStage(game, simpMessagingTemplate, stage, player);
     }
 }

@@ -25,6 +25,7 @@ public class TournamentCardStrategy implements NewStoryCardStrategy{
         game.setNumOfTournamentPlayers(0);
         game.setInTieBreakerTournament(false);
         game.setTournamentPlayers(new ArrayList<>());
+        simpMessagingTemplate.convertAndSend("/topic/game-progress/"+game.getGameId(), game);
         simpMessagingTemplate.convertAndSend("/topic/display-story-card/"+game.getGameId(), game.getCurrentStoryCard());
         simpMessagingTemplate.convertAndSend("/topic/join-tournament/"+game.getGameId()+"/"+game.getMainPlayer().getName(),game.getCurrentStoryCard());
     }

@@ -5539,6 +5539,73 @@ class QotRtTournamentTests {
 
 		Assertions.assertEquals(Lists.list("At Tintagel", true), Lists.list(game.getCurrentStoryCard().getName(), game.getInTieBreakerTournament()));
 	}
+}
 
 
+@SpringBootTest
+@AutoConfigureMockMvc
+class QotRtEventTests {
+
+	@Autowired
+	private MockMvc mockMvc;
+	private final GameService gameService = new GameService();
+	private final BattlePointsOrBidsReceiver battlePointsOrBidsReceiver = new BattlePointsOrBidsReceiver();
+
+	//Test that players can join a tournament
+	@Test
+	void chivalrousDeed() throws Exception {
+		//Creating the ObjectMapper object
+		ObjectMapper mapper = new ObjectMapper();
+
+		//Creating players
+		Player p1 = new Player("John", "19203391912", 0);
+		Player p2 = new Player("Tim", "12930494592", 0);
+		Player p3 = new Player("Sally", "13495859302", 0);
+		//Converting the Player to JSONString
+		String jsonPlayer1 = mapper.writeValueAsString(p1);
+
+		MvcResult result = mockMvc.perform(post("/game/start")
+						.content(jsonPlayer1)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Get Result, convert to JSON and get gameId
+		String actualJson = result.getResponse().getContentAsString();
+		JSONObject gameJSONobj = new JSONObject(actualJson);
+		String gameId = gameJSONobj.getString("gameId");
+
+
+		//Connect another player to the game (p2)
+		ConnectRequest connectRequest = new ConnectRequest(p2, gameId);
+		String jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Connect another player to the game (p3)
+		connectRequest = new ConnectRequest(p3, gameId);
+		jsonConnectRequest = mapper.writeValueAsString(connectRequest);
+		mockMvc.perform(post("/game/connect")
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Start the game (p3 starts it)
+		mockMvc.perform(post("/game/play-game?gameId=" + gameId)
+						.content(jsonConnectRequest)
+						.contentType(MediaType.APPLICATION_JSON)
+						.accept(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+
+		//Set story card is rigged to be chivalrous
+		Game game = gameService.getGame(gameId);
+
+		//expect both players shield to be 3
+
+		Assertions.assertEquals(Lists.list(3,3,3), Lists.list(game.getPlayers().get(0).getShields(),game.getPlayers().get(1).getShields(),game.getPlayers().get(2).getShields()));
+	}
 }

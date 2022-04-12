@@ -26,7 +26,7 @@ public class QuestService {
     private final BattlePointsOrBidsReceiver battlePointsOrBidsReceiver = new BattlePointsOrBidsReceiver();
 
     //Player has chosen to decline to sponsor the Quest
-    public String declineSponsorQuest(String gameId , ConnectRequest request , SimpMessagingTemplate simpMessagingTemplate, GameService gameService){
+    public String declineSponsorQuest(String gameId , ConnectRequest request , SimpMessagingTemplate simpMessagingTemplate, GameService gameService) throws InterruptedException {
         Game game = gameService.getGame(gameId);
         int index = 0;
         int sizeOfPlayersList = game.getPlayers().size();
@@ -243,7 +243,7 @@ public class QuestService {
         return ResponseEntity.ok().body("Successfully joined the quest!");
     }
 
-    public ResponseEntity declineToJoinCurrentQuest(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+    public ResponseEntity declineToJoinCurrentQuest(String gameId, ConnectRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) throws InterruptedException {
         //Check if this is the last person to join the quest (also update the decliner to 'waiting')
         Game game = gameService.getGame(gameId);
         int index = 0;
@@ -356,7 +356,7 @@ public class QuestService {
         return ResponseEntity.ok().body("Submitted card to battle the foe");
     }
 
-    public ResponseEntity completeCardsPlayedAgainstFoe(String gameId, SubmitStageRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+    public ResponseEntity completeCardsPlayedAgainstFoe(String gameId, SubmitStageRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) throws InterruptedException {
         Game game = gameService.getGame(gameId);
         //Proceed quest stage with foe card forward
         questStageProceeder.setProceedQuestStageStrategy(new FoeStageStrategy());
@@ -366,7 +366,7 @@ public class QuestService {
     }
 
 
-    public ResponseEntity submitBid(String gameId, SubmitBidRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+    public ResponseEntity submitBid(String gameId, SubmitBidRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) throws InterruptedException {
         Game game = gameService.getGame(gameId);
         int numbids = getCurrentMaxBid(game, request.getStage())-1;
         int index = 0;
@@ -397,7 +397,7 @@ public class QuestService {
         return ResponseEntity.ok().body("Success");
     }
 
-    public ResponseEntity declineToSubmitBid(String gameId, SubmitStageRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+    public ResponseEntity declineToSubmitBid(String gameId, SubmitStageRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) throws InterruptedException {
         Game game = gameService.getGame(gameId);
         //Proceed quest forward
         questStageProceeder.setProceedQuestStageStrategy(new TestStageDeclineBidStrategy());
@@ -406,7 +406,7 @@ public class QuestService {
         return ResponseEntity.ok().body("Successfully removed yourself from the quest");
     }
 
-    public ResponseEntity discardForTestCard(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) {
+    public ResponseEntity discardForTestCard(String gameId, SelectSponsorCardRequest request, SimpMessagingTemplate simpMessagingTemplate, GameService gameService) throws InterruptedException {
         Game game = gameService.getGame(gameId);
 
         //Subtract 1 from players bid (card to discard essentially) and discard the card

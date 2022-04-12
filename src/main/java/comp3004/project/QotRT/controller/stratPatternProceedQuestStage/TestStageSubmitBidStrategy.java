@@ -17,7 +17,7 @@ public class TestStageSubmitBidStrategy implements ProceedQuestStageStrategy{
     private final BattlePointsOrBidsReceiver battlePointsOrBidsReceiver = new BattlePointsOrBidsReceiver();
 
     @Override
-    public void proceedQuestStage(Game game, SimpMessagingTemplate simpMessagingTemplate, int stage, Player player) {
+    public void proceedQuestStage(Game game, SimpMessagingTemplate simpMessagingTemplate, int stage, Player player) throws InterruptedException {
         String gameId = game.getGameId();
         //Get index of player and remove previous players from questing array and remove previous players weapons and amours
         int index = 0;

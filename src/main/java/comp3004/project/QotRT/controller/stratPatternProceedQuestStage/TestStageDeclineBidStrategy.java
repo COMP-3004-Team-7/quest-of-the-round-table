@@ -12,7 +12,7 @@ public class TestStageDeclineBidStrategy implements ProceedQuestStageStrategy{
     private final NewStoryCardDealer newStoryCardDealer = new NewStoryCardDealer();
 
     @Override
-    public void proceedQuestStage(Game game, SimpMessagingTemplate simpMessagingTemplate, int stage, Player player) {
+    public void proceedQuestStage(Game game, SimpMessagingTemplate simpMessagingTemplate, int stage, Player player) throws InterruptedException {
         String gameId = game.getGameId();
         //Get player who sent request
         int index = 0;

@@ -11,7 +11,7 @@ public class NewStoryCardDealer {
         this.newStoryCardStrategy = newStoryCardStrategy;
     }
 
-    public void dealWithNewStoryCard(Game game, SimpMessagingTemplate simpMessagingTemplate){
+    public void dealWithNewStoryCard(Game game, SimpMessagingTemplate simpMessagingTemplate) throws InterruptedException {
         //Draw new story card, and set it to current story card -> implement appropriate strategy if its Event or Tournament or Quest
         StoryCard storyCard = game.getStoryDeck().drawCard();
         game.setCurrentStoryCard(storyCard);

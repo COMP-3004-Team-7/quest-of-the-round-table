@@ -19,7 +19,7 @@ public class CardService {
     //private final EventService eventService = new EventService();
 
 
-    public ArrayList<Card> startGame(GameService gameService, String gameId, SimpMessagingTemplate simpMessagingTemplate){
+    public ArrayList<Card> startGame(GameService gameService, String gameId, SimpMessagingTemplate simpMessagingTemplate) throws InterruptedException {
         System.out.println("play-game request");
         System.out.println("GAMEID = " + gameId);
         Game game = gameService.getGame(gameId);
