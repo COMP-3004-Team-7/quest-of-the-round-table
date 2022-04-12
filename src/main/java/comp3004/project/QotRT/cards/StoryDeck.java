@@ -127,6 +127,13 @@ public class StoryDeck {
         deck.add(eventfactory.createCard("Chivalrous Deed"));
     }
 
+    public void rigDeckTwo(){
+        QuestCardFactory questCardFactory = new QuestCardFactory();
+        deck.add(questCardFactory.createCard("Test of the Green Knight"));
+        deck.add(questCardFactory.createCard("Search for the Questing Beast"));
+        deck.add(questCardFactory.createCard("Search for the Holy Grail"));
+    }
+
     //Draw Top Card of Deck
     public StoryCard drawCard(){
         return deck.remove(deck.size()-1);
