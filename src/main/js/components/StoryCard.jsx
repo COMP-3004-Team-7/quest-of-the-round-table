@@ -16,6 +16,9 @@ class StoryCard extends React.Component{
 
         return cards;
     }
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if(prevProps.card !== this.props.card && this.props.card.type === "Event") alert(this.props.card.name);
+    }
 
     render(){
         return(<Card direction ={"row"} sx={{m:2, p:2}}>
