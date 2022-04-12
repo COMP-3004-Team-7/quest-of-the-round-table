@@ -105,6 +105,20 @@ public class StoryDeck {
         deck.add(questCardFactory.createCard("Repel the Saxon Raiders"));
     }
 
+    public void rigDeckOne(){
+        //Rig deck to be quest, event, tournament
+        QuestCardFactory questCardFactory = new QuestCardFactory();
+        EventCardFactory eventfactory = new EventCardFactory();
+        deck.add(eventfactory.createCard("Chivalrous Deed"));
+        deck.add(eventfactory.createCard("Pox"));
+        deck.add(eventfactory.createCard("Plague"));
+        deck.add(eventfactory.createCard("King's Recognition"));
+        deck.add(eventfactory.createCard("Queen's Favor"));
+        deck.add(eventfactory.createCard("Court Called to Camelot"));
+        deck.add(eventfactory.createCard("King's Call to Arms"));
+        deck.add(eventfactory.createCard("Prosperity Throughout the Realm"));
+    }
+
     //Draw Top Card of Deck
     public StoryCard drawCard(){
         return deck.remove(deck.size()-1);
